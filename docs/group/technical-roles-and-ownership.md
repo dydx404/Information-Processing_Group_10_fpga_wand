@@ -1,158 +1,220 @@
-# Technical Roles and Ownership Structure
+# Technical Roles and Ownership Structure  
+**FPGA-Wand Project**
 
-This document defines the technical role structure for the FPGA-Wand project.
-Work is divided into three concrete engineering tracks that together form the
-complete system.
+This document defines the technical ownership and responsibility structure for the **FPGA-Wand** project.
 
-Each track has clearly defined responsibilities, deliverables, and boundaries.
-This structure is designed to support parallel development while maintaining
-integration stability and accountability.
+The system is developed across **three concrete engineering tracks** that together form a complete, end-to-end solution. Each track owns a clearly defined subsystem, delivers testable outputs, and integrates with the others through explicitly defined interfaces.
+
+This structure is designed to:
+
+- Enable parallel development  
+- Prevent responsibility overlap  
+- Maintain integration stability  
+- Support incremental milestones  
 
 ---
 
 ## Overview of the Three Technical Tracks
 
-The project is organised into the following three tracks:
+The project is organised into the following tracks:
 
-1. **ESP32 / Raw Data Collection**
-2. **FPGA Hardware Design & Node-Side Processing (Jupyter/PYNQ)**
-3. **Cloud Backend & Database**
+1. **Sensing & Data Acquisition** (ESP32 + Camera)  
+2. **FPGA Node & Local Processing** (PYNQ / Jupyter / HDMI)  
+3. **Backend, Database & User Interface** (Web Frontend)  
 
-Each track:
-- Owns a well-defined part of the system
-- Delivers concrete, testable outputs
-- Integrates with the other tracks through agreed interfaces
-
----
-
-## Track 1 — ESP32 / Raw Data Collection
-
-### Scope
-This track is responsible for all **sensor-side functionality** on the wand.
-
-### Responsibilities
-- IMU or sensor interfacing (I2C/SPI)
-- Sampling and timestamping of raw motion data
-- Basic preprocessing (e.g. scaling, filtering if needed)
-- Packaging and transmitting data or events to the backend
-- Receiving configuration updates from the backend (if applicable)
-- Power supply and other considerations
-
-### Explicit Non-Responsibilities
-- Gesture classification logic
-- FPGA acceleration
-- Cloud-side decision making
-
-### Deliverables
-- ESP32 firmware that reliably produces raw or lightly processed motion data
-- Verified data transmission to the backend
-- Documentation of data format and sampling behaviour
-
-### Success Criterion
-> Moving the wand produces consistent, time-aligned data that reaches the cloud.
+The **FPGA node (PYNQ-Z1)** is the primary system node as defined by the coursework specification.  
+The **ESP32 and camera** together form the wand-side sensing subsystem.
+The **Backend,Database&User interface** Allows the system to be usable and applicable
 
 ---
 
-## Track 2 — FPGA Hardware Design & Node-Side Processing
+## Track 1 — Sensing & Data Acquisition (ESP32 + Camera)
 
 ### Scope
-This track is responsible for **local processing on the node**, including both
-software and hardware acceleration paths.
+
+This track owns all wand-side sensing and observation, including both inertial sensing and vision-based tracking.
+
+It is responsible for producing **clean, time-aligned, segmented raw data streams** for the FPGA node.
 
 ### Responsibilities
-- Node-side processing logic (Python/Jupyter on PYNQ)
-- Gesture detection and classification (circle as minimum demo)
-- Software-only baseline implementation
-- FPGA hardware design (Vivado) for acceleration or optimisation
-- Drivers and interfaces between FPGA and node software
-- Performance and resource usage measurement
+
+- IMU interfacing (MPU6050 via I²C)  
+- Fixed-rate IMU sampling and timestamping  
+- Gyroscope bias calibration at startup  
+- Lightweight preprocessing (sanity checks, scaling if required)  
+- Motion segmentation (gesture start / end detection)  
+- Driving and controlling the wand marker (IR LED or visible LED)  
+- Camera setup and calibration  
+- Vision-based tracking of the wand marker (2D position extraction)  
+- Synchronisation of camera data with motion segments  
+- UART transmission of IMU data and segmentation events to the FPGA node  
+- Power stability and basic hardware reliability  
 
 ### Explicit Non-Responsibilities
-- Raw sensor acquisition
-- Cloud session logic or persistence
+
+- Gesture or shape classification  
+- Path interpretation or semantic decision making  
+- FPGA hardware design or acceleration  
+- Cloud communication or persistence  
+- User-facing interfaces  
+
+### Data Outputs (to FPGA Node)
+
+- **IMU_SAMPLE**  
+- (seq, dt/timestamp, ax, ay, az, gx, gy, gz)
+
+- **SEG_START / SEG_END** events  
+
+- **2D_POSITION** samples  
+- Per camera frame during active segments  
+
+- **CONFIG** packet  
+- Sensor ranges  
+- Sample rates  
+- Device ID  
 
 ### Deliverables
-- Working local gesture classification pipeline
-- Clear comparison between software and FPGA-accelerated paths (if implemented)
-- Resource utilisation and performance metrics
-- Reproducible demo notebooks or scripts
+
+- Stable ESP32 firmware producing segmented IMU data  
+- Camera tracking module producing reliable 2D coordinates  
+- Defined and documented UART data protocol  
+- Hardware bring-up, calibration, and validation notes  
 
 ### Success Criterion
-> The node can locally determine whether a gesture (e.g. circle) was performed
-> and report the result correctly.
+
+Moving the wand produces **consistent, segmented IMU data** and a **stable 2D positional trace** that is correctly received by the FPGA node.
 
 ---
 
-## Track 3 — Cloud Backend & Database
+## Track 2 — FPGA Node & Local Processing (PYNQ / Jupyter / HDMI)
 
 ### Scope
-This track is responsible for all **server-side functionality**.
+
+This track owns all node-side intelligence, local processing, and real-time presentation.
+
+The **PYNQ-Z1** acts as the local decision-making node, performing processing independently of the backend.
 
 ### Responsibilities
-- API or WebSocket server
-- Multi-node session management
-- Receiving events or data from nodes
-- Sending configuration or state updates back to nodes
-- Database schema and persistence
-- Logging for testing and evaluation
+
+#### Node-Side Software (PS)
+
+- UART reception and buffering of IMU and camera data  
+- Synchronisation of inertial and visual data streams  
+- Software baseline processing pipeline  
+- 2D path reconstruction and normalisation  
+- Local gesture / shape recognition  
+- Minimum demo: **line** and **circle**  
+- HDMI output  
+- Real-time path drawing  
+- Classification result display  
+- Local configuration handling  
+
+#### FPGA Hardware (PL)
+
+- Deterministic signal processing on IMU data:
+- Filtering  
+- Energy accumulation  
+- Peak detection  
+- Segment-level feature extraction  
+- AXI-based interfaces (DMA / streaming)  
+- Fixed-point optimisation where appropriate  
+- Performance and resource utilisation measurement  
 
 ### Explicit Non-Responsibilities
-- Sensor handling
-- Local signal processing
-- FPGA design
+
+- Raw sensor acquisition  
+- Camera calibration or vision tracking  
+- Cloud session management  
+- Web or user interface development  
 
 ### Deliverables
-- Backend server that supports multiple simultaneous nodes
-- Reliable bidirectional communication
-- Database storing relevant state and logs
-- Deployment-ready backend (local or EC2)
+
+- Working local classification pipeline  
+- HDMI demo showing reconstructed path and classification  
+- FPGA design (if implemented) with measured benefit  
+- Software vs hardware performance comparison  
+- Reproducible Jupyter notebooks / scripts  
 
 ### Success Criterion
-> Two or more nodes can communicate with the server and receive state updates
-> that affect their behaviour.
+
+The FPGA node can locally **reconstruct a 2D drawing**, **classify a basic shape** (e.g. line or circle), and **display the result in real time via HDMI**.
+
+---
+
+## Track 3 — Backend, Database & User Interface
+
+### Scope
+
+This track owns all server-side logic and user-facing interfaces, including multi-node coordination and interactive presentation.
+
+It provides the system-level experience beyond a single FPGA node.
+
+### Responsibilities
+
+- Backend API or WebSocket server  
+- Multi-node session management  
+- Receiving classification results or events from nodes  
+- Sending configuration or mode updates to nodes  
+- Database schema and persistence  
+- System-level logging for testing and evaluation  
+- User-facing interface  
+- Web dashboard or web-based game  
+- Visualisation of node outputs and system state  
+- Deployment (local or EC2)  
+
+### Explicit Non-Responsibilities
+
+- Sensor handling  
+- Vision or inertial processing  
+- FPGA or hardware design  
+- Real-time HDMI rendering  
+
+### Deliverables
+
+- Backend server supporting multiple FPGA nodes  
+- Reliable bidirectional communication  
+- Database storing events and system state  
+- User-facing web interface demonstrating interaction  
+- Deployment and usage documentation  
+
+### Success Criterion
+
+Multiple FPGA nodes can connect to the backend, affect **shared system state**, and interact through a **user-facing interface**.
 
 ---
 
 ## Cross-Track Integration Rules
 
-- Track interfaces must be documented (data format, message schema)
-- No track may silently change an interface without coordination
-- End-to-end demos take priority over internal optimisation
-- Software baselines must exist before hardware optimisation
+- All interfaces (UART packets, message schemas, APIs) **must be documented**  
+- No track may change an interface without coordination  
+- End-to-end demos take priority over internal optimisation  
+- Software baselines must exist before FPGA acceleration  
+- Camera-derived 2D position is the **authoritative spatial reference**  
 
 ---
 
-## Project Lead and Integration Role
+## Project Lead & Integration Role
 
-One member acts as **Project Lead / Integrator**.
+One member acts as **Project Lead / System Integrator**.
 
-Responsibilities:
-- Maintain architectural consistency across tracks
-- Decide interface changes and scope adjustments
-- Run milestone reviews and accept demos
-- Coordinate merges and feature freezes
+### Responsibilities
 
-The Project Lead may actively contribute to **any one technical track** while
-retaining responsibility for overall integration.
+- Maintain architectural consistency across tracks  
+- Approve interface and scope changes  
+- Run milestone reviews and accept demos  
+- Coordinate merges and feature freezes  
+
+The Project Lead may actively contribute to one technical track while retaining **overall integration authority**.
 
 ---
 
 ## Definition of Done (All Tracks)
 
 A task is considered complete only when:
-- The code runs as intended
-- The output can be demonstrated
-- The change is integrated without breaking other tracks
-- Relevant documentation is updated if needed
 
----
+- The functionality runs as intended  
+- The output can be demonstrated  
+- The change integrates cleanly with other tracks  
+- Relevant documentation is updated  
 
-## Summary
 
-This role structure ensures:
-- Clear technical ownership
-- Parallel development without confusion
-- Predictable integration
-- Fair and visible contributions
-
-All development is coordinated through GitHub issues, branches, and pull requests.
