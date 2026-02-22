@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPGA-Wand | Edge-to-Cloud Gesture System</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #0f172a;
+        color: #f1f5f9;
+    }
+
+    header {
+        background: #1e293b;
+        padding: 20px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    nav {
+        display: flex;
+        justify-content: center;
+        background: #0ea5e9;
+    }
+
+    nav button {
+        background: none;
+        border: none;
+        padding: 15px 30px;
+        font-size: 16px;
+        cursor: pointer;
+        color: white;
+        transition: 0.3s;
+    }
+
+    nav button:hover {
+        background: rgba(255,255,255,0.2);
+    }
+
+    .container {
+        padding: 40px;
+        max-width: 1000px;
+        margin: auto;
+    }
+
+    .section {
+        display: none;
+    }
+
+    .active {
+        display: block;
+    }
+
+    .card {
+        background: #1e293b;
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    input, select, button.action-btn, textarea {
+        padding: 10px;
+        margin-top: 10px;
+        width: 100%;
+        border-radius: 5px;
+        border: none;
+        font-size: 14px;
+    }
+
+    textarea {
+        height: 150px;
+        resize: none;
+        background-color: #0f172a;
+        color: #38bdf8;
+        font-family: monospace;
+        overflow-y: scroll;
+    }
+
+    button.action-btn {
+        background-color: #0ea5e9;
+        color: white;
+        cursor: pointer;
+    }
+
+    button.action-btn:hover {
+        background-color: #0284c7;
+    }
+
+    .status {
+        margin-top: 15px;
+        font-weight: bold;
+        color: #38bdf8;
+    }
+
+    ul {
+        margin-top: 10px;
+        padding-left: 20px;
+    }
+
+    footer {
+        text-align: center;
+        padding: 20px;
+        background: #1e293b;
+        font-size: 14px;
+        margin-top: 40px;
+    }
+    .calibration-btn {
+    margin-bottom: 20px;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+    FPGA-Wand
+</header>
+
+<nav>
+    <button onclick="showSection('calibration')">Wand Calibration</button>
+    <button onclick="showSection('gesture')">Gesture Detection</button>
+    <button onclick="showSection('game')">Guess the Picture Game</button>
+</nav>
+
+<div class="container">
+
+    <!--calibration-->
+    <div id="calibration" class="section active">
+        <div class="card">
+            <h2>Wand Calibration</h2>
+            <p>Move the wand to observe live sensor data streaming from the FPGA node.</p>
+
+            <label>Node ID:</label>
+            <input type="text" placeholder="Enter Wand Node ID">
+
+            <button class="action-btn calibration-btn" onclick="startDataStream()">Simulate Data Stream</button>
+
+            <label>Live Node Data:</label>
+            <textarea id="nodeData" readonly>
+Awaiting sensor data...
+            </textarea>
+        </div>
+    </div>
+
+    <!--gesture-->
+    <div id="gesture" class="section">
+        <div class="card">
+            <h2>Gesture Detection</h2>
+            <p>Real-time FPGA-accelerated gesture classification.</p>
+
+            <h3>Supported Gestures</h3>
+            <ul>
+                <li>Vertical Line</li>
+                <li>Horizontal Line</li>
+                <li>Circle</li>
+                <li>Square</li>
+            </ul>
+
+            <label>Active Node:</label>
+            <input type="text" placeholder="Enter Wand Node ID">
+
+            <button class="action-btn">Start Detection</button>
+            <button class="action-btn">Stop Detection</button>
+
+            <div class="status">Detected Gesture: None</div>
+        </div>
+    </div>
+
+    <!--picture game-->
+    <div id="game" class="section">
+        <div class="card">
+            <h2>Guess the Picture Game</h2>
+            <p>Collaborative gesture-based drawing and guessing game.</p>
+
+            <div style="background:#0f172a; height:200px; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <p>Drawing Canvas Placeholder</p>
+            </div>
+
+            <label>Your Guess:</label>
+            <input type="text" placeholder="Enter your guess">
+
+            <button class="action-btn">Submit Guess</button>
+
+            <div class="status">Game Status: Waiting for input...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function showSection(sectionId) {
+        const sections = document.querySelectorAll('.section');
+        sections.forEach(section => section.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+    }
+
+    function startDataStream() {
+        const textarea = document.getElementById("nodeData");
+        textarea.value = "";
+
+        let counter = 0;
+        const interval = setInterval(() => {
+            const x = (Math.random() * 2 - 1).toFixed(3);
+            const y = (Math.random() * 2 - 1).toFixed(3);
+            const z = (Math.random() * 2 - 1).toFixed(3);
+
+            textarea.value += `Sample ${counter}: X=${x}, Y=${y}, Z=${z}\n`;
+            textarea.scrollTop = textarea.scrollHeight;
+            counter++;
+
+            if (counter > 20) clearInterval(interval);
+        }, 300);
+    }
+</script>
+
+</body>
+</html>
