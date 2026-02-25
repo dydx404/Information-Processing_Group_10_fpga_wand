@@ -117,3 +117,107 @@ typedef struct {
   uint32_t timestamp_ms;   // Unix time (ms, low 32 bits)
 } wb_point_v1_t;
 #pragma pack(pop)
+
+```
+# PYNQ Vision → Stroke Segmentation → UDP Packets (MVP Guide)
+
+## Goal
+From each IR camera frame, you extract `(x, y, t)` (blob centroid + timestamp).  
+You must group consecutive valid points into **strokes** and send them as **wb-point-v1 UDP packets** to Wand-Brain (EC2).
+
+---
+
+## 1) Per-frame inputs you already have
+For each camera frame:
+- `t_ms` = PYNQ timestamp (ms)
+- `blob_found` = boolean
+- if `blob_found`: `x, y` (centroid) in pixels or normalized
+
+(If available: `confidence` or `area` to reject noise.)
+
+---
+
+## 2) Define “valid point”
+MVP:
+- `valid = blob_found`
+Better (if you have quality metrics):
+- `valid = blob_found && confidence >= Cmin` (or `area >= Amin`)
+
+Only **valid** frames produce UDP point packets.
+
+---
+
+## 3) Stroke definition (vision-only, no IMU needed)
+A **stroke** is a contiguous run of valid points, separated by a short gap.
+
+Use these defaults:
+- `N_on = 2`  (need 2 consecutive valid frames to start a stroke)
+- `N_off = 3` (need 3 consecutive invalid frames to end a stroke)
+- `T_gap_end = 150 ms` (end stroke if no valid points for this long)
+
+---
+
+## 4) State machine
+Maintain:
+- `state ∈ {IDLE, ACTIVE}`
+- `stroke_id` (uint32), starts at 0 and increments per new stroke
+- `packet_number` (uint32), increments per sent UDP packet
+- `last_valid_point = (x,y,t)` (for closing packet if needed)
+- counters/timers: `valid_count`, `invalid_count`, `last_valid_time_ms`
+
+### IDLE → ACTIVE (stroke start)
+If `valid` for `N_on` consecutive frames:
+- `stroke_id += 1`
+- Next sent packet sets flags: `PEN_DOWN=1`, `STROKE_START=1`
+- Enter ACTIVE
+
+### ACTIVE (stroke continues)
+For each frame:
+- If `valid`:
+  - send point packet with flags `PEN_DOWN=1`
+  - update `last_valid_point`
+  - reset invalid counters
+- If `invalid`:
+  - increment `invalid_count`
+  - if `(t_ms - last_valid_time_ms) > T_gap_end` OR `invalid_count >= N_off`:
+    - close stroke (see next section)
+    - enter IDLE
+
+---
+
+## 5) Closing a stroke (important detail)
+Problem: you only know the stroke ended *after* missing frames.
+
+MVP solution:
+- When ending, send **one extra UDP packet** using `last_valid_point` `(x,y,t_last)`
+- Set flags: `PEN_DOWN=0`, `STROKE_END=1`
+- Same `stroke_id`, new `packet_number`
+
+This guarantees the backend sees a clean end marker.
+
+---
+
+## 6) UDP packet fields (wb-point-v1)
+For every sent point packet:
+- `device_number`: fixed per PYNQ board
+- `wand_id`: 1 or 2 (competition)
+- `packet_number`: increment each packet
+- `stroke_id`: current stroke
+- `timestamp_ms`: `t_ms` from PYNQ
+- `x_q, y_q`: normalized Q15 preferred:
+  - `x_q = round(x_norm * 32767)`
+  - `y_q = round(y_norm * 32767)`
+
+Flags:
+- Middle of stroke: `PEN_DOWN=1`
+- First packet: `PEN_DOWN=1 | STROKE_START=1`
+- End packet: `STROKE_END=1` (and `PEN_DOWN=0`)
+
+---
+
+## 7) Output expectation
+Wand-Brain will group points by:
+`(device_number, wand_id, stroke_id)`  
+and relies on `STROKE_START/STROKE_END` to segment reliably.
+
+This protocol is vision-only for MVP (single clock, minimal complexity).
