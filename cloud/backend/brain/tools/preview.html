@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <body>
+    <img id="img" width="256" height="256" />
+    <script>
+      const img = document.getElementById("img");
+      setInterval(() => {
+        img.src = `http://localhost:8000/v1/render/latest.png?wand_id=1&t=${Date.now()}`;
+      }, 200);
+    </script>
+  </body>
+</html>
