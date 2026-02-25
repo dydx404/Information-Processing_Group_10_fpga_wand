@@ -1,77 +1,92 @@
 # FPGA-Wand  
-**Distributed Gesture Recognition Using ESP32, FPGA, and Cloud Backend**
-
-**Information Processing — Group 10 Project**
+**Distributed Point-Tracking and Shape Recognition System**  
+*Information Processing — Group 10*
 
 ---
 
 ## Overview
 
-FPGA-Wand is a **multi-node, edge-to-cloud gesture recognition system** developed as part of the *Information Processing* coursework.
+FPGA-Wand is a **distributed, edge-to-cloud interactive system** for real-time motion tracking and shape recognition.
 
-Each node (referred to as a *wand*) captures motion data using onboard sensors, performs **local processing on an FPGA-based node**, and optionally communicates with a **cloud backend** to enable real-time, collaborative, gesture-based interaction.
+Each *wand* captures motion using infrared point tracking and inertial sensing, transmits time-aligned data to an FPGA-based edge node, and reconstructs a 2D trajectory in real time. The reconstructed path is then **classified and scored** against predefined reference shapes, with immediate visual feedback.
 
-The project demonstrates a complete, end-to-end system spanning:
+Rather than treating “gesture recognition” as a black box, the project deliberately separates:
 
-- Embedded sensing  
-- FPGA-accelerated signal processing  
-- Networked coordination and persistence  
+- sensing  
+- reconstruction  
+- classification  
+- coordination  
 
-A strong emphasis is placed on **clear interfaces**, **layer separation**, and **system-level correctness** over isolated optimisation.
+Each stage has a **clearly defined responsibility and interface**, prioritising system-level correctness, determinism, and debuggability over opaque optimisation.
+
+---
+
+## Key Design Principles
+
+- **Clear layer separation** — no hidden cross-dependencies  
+- **Explicit protocols** — all inter-module communication is documented  
+- **Deterministic edge processing** — low latency, predictable behaviour  
+- **Extensible architecture** — new shapes, nodes, or behaviours can be added without refactoring the core  
 
 ---
 
 ## System Architecture
 
-The system is organised as a layered architecture, with each layer having a clearly defined responsibility and interface.
+The system is organised as a four-layer architecture.
 
-### 1. ESP32 Wand (Sensing Layer)
+### 1. ESP32 Wand — Sensing Layer
 
 Responsibilities:
+- Infrared point detection (camera-based)
 - Inertial sensing using an IMU
-- vision-based tracking using a camera
-- Motion segmentation and basic preprocessing
-- UART transmission of time-aligned sensor data
+- Basic motion segmentation and filtering
+- Timestamping and packetisation
+- UART transmission to the FPGA node
 
-This layer is responsible only for **data acquisition and conditioning**, not interpretation.
+This layer **only acquires and conditions data**.  
+It performs **no interpretation or classification**.
 
 ---
 
-### 2. FPGA / Node Processing (Edge Intelligence)
+### 2. FPGA Node — Edge Intelligence Layer
 
 Runs on a **PYNQ-Z1 FPGA SoC**.
 
 Responsibilities:
-- Receiving sensor data from the ESP32 wand
-- Local signal processing and feature extraction
-- 2D motion path reconstruction
-- Classification of basic gestures (e.g. line, circle)
-- Real-time visual feedback via HDMI
+- Receiving sensor packets from the ESP32
+- Time alignment and buffering
+- 2D trajectory reconstruction
+- Shape normalisation and comparison
+- Scoring against predefined reference shapes
+- Real-time HDMI visual output
 
-This layer performs **deterministic, low-latency processing**, with selected components accelerated in FPGA fabric where appropriate.
+Processing is designed to be **deterministic and low-latency**, with FPGA fabric used where acceleration is beneficial and ARM cores handling control logic.
+
+This layer is the **authoritative decision-making core** of the system.
 
 ---
 
-### 3. Cloud Backend (Coordination Layer)
+### 3. Cloud Backend — Coordination Layer (Optional)
 
 Responsibilities:
-- Session and state management
-- Multi-node coordination
-- Configuration and event handling
-- Optional game logic or interactive behaviour
+- Session and node management
+- Multi-wand coordination (e.g. competition or collaboration)
+- Event handling and configuration distribution
+- Optional game logic or interaction rules
+
+The system remains fully functional **without the cloud**.  
+Cloud services are additive, not required.
 
 ---
 
-### 4. Database (Persistence Layer)
+### 4. Database — Persistence Layer
 
 Responsibilities:
-- Storage of system state
-- Logging for testing and evaluation
-- Support for replay, debugging, and offline analysis
+- Logging trajectories, scores, and events
+- Supporting replay and offline analysis
+- Debugging and evaluation
 
----
-
-Architecture diagrams, interface definitions, and design decisions are documented in the `docs/` directory.
+This layer exists to support development, testing, and demonstrations, not real-time control.
 
 ---
 
@@ -79,73 +94,88 @@ Architecture diagrams, interface definitions, and design decisions are documente
 
 ```text
 wand/        ESP32 firmware, FPGA designs, and node-side software
-cloud/       Backend server, database, and deployment scripts
-protocol/    Message schemas and communication specifications
-docs/        Architecture diagrams, testing notes, and report material
-tools/       Development, debugging, and testing utilities
+cloud/       Backend server, database schema, and deployment scripts
+protocol/    Message formats and communication specifications
+docs/        Architecture diagrams, reports, and testing notes
+tools/       Development, debugging, and test utilities
 Repository Conventions
-protocol/ is the single source of truth for all inter-module interfaces
-```
 
-Each directory corresponds to a clearly owned technical subsystem
+protocol/ is the single source of truth for all interfaces
 
-Cross-module changes must be coordinated and reviewed
+Each directory corresponds to a clearly owned subsystem
 
-## Development Workflow
-- All development is carried out on feature branches
+Cross-module changes must be coordinated
 
-- main is kept stable and demo-ready at all times
+Interfaces may not be changed unilaterally
 
-- Changes are merged via Pull Requests
+Development Workflow
 
-- Interfaces must not be modified without cross-track agreement
+All development occurs on feature branches
 
-- Contribution rules are defined in CONTRIBUTING.md
+main is kept stable and demo-ready
 
-End-to-end functionality takes priority over internal optimisation
+Changes are merged via Pull Requests
 
-## Requirements
-### Hardware
+Interface changes require cross-track agreement
+
+End-to-end functionality takes priority over micro-optimisation
+
+Contribution rules are defined in CONTRIBUTING.md.
+
+Requirements
+Hardware
 
 ESP32-based development board
 
 FPGA SoC board (e.g. PYNQ-Z1)
 
-Optional camera for vision-based tracking
+Infrared LED and camera module
 
-### Software
+Software
+
 Python 3.10 or newer
 
-Vivado (for FPGA development and synthesis)
+Vivado (for FPGA synthesis)
 
 PYNQ environment (Jupyter-based control and drivers)
 
-Cloud (Optional)
+Optional Cloud
+
 AWS account
 
 EC2 instance for backend deployment
 
 Project Goals
-Minimum Successful Demonstration
-The minimum viable system demonstrates:
+Minimum Viable Demonstration
 
-A wand producing segmented motion data
+The minimum successful system demonstrates:
 
-An FPGA node reconstructing and classifying a gesture locally
+A wand producing segmented, timestamped motion data
 
-Real-time visual feedback displayed via HDMI
+An FPGA node reconstructing a 2D trajectory
 
-## Extended Functionality
+Local classification and scoring against a reference shape
+
+Real-time HDMI visual feedback
+
+No cloud dependency is required for the MVP.
+
+Extended Functionality
+
 Optional extensions include:
 
-Multi-node interaction
+Multi-node competitive or collaborative modes
 
-Cloud-backed coordination
+Cloud-coordinated sessions
 
-Web-based visualisation or game logic
+Web-based visualisation and replay
+
+Expanded shape libraries and scoring rules
 
 Status
+
 This project is under active development as part of the Information Processing coursework.
 
-Milestones, demonstrations, and integration status are tracked in the docs/ directory.
+Milestones, integration status, and design decisions are documented in the docs/ directory.
 
+FPGA-Wand emphasises clarity, determinism, and system-level thinking — treating hardware, software, and communication as one coherent machine rather than isolated components.
