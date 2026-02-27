@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <body>
+    <div style="font-family: sans-serif; margin-bottom: 8px;">
+      <label for="template">Template:</label>
+      <select id="template">
+        <option value="circle_v1">Circle</option>
+        <option value="triangle_v1">Triangle</option>
+        <option value="heart_v1">Heart</option>
+        <option value="sine_v1">Sine</option>
+        <option value="infinity_v1">Infinity</option>
+      </select>
+      <span id="status" style="margin-left: 10px;">waiting...</span>
+    </div>
+    <div style="position: relative; width: 256px; height: 256px; border:1px solid #999; background:#111;">
+      <img id="bg" width="256" height="256" style="position:absolute; left:0; top:0; opacity:0.28; image-rendering:pixelated;" />
+      <img id="draw" width="256" height="256" style="position:absolute; left:0; top:0; image-rendering:pixelated;" />
+    </div>
+    <script>
+      const bg = document.getElementById("bg");
+      const draw = document.getElementById("draw");
+      const templateSel = document.getElementById("template");
+      const statusEl = document.getElementById("status");
+      const params = new URLSearchParams(window.location.search);
+      const defaultApiBase = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const API_BASE = params.get("api") || defaultApiBase;
+      const WAND_ID = Number(params.get("wand") || "1");
+      const INTERVAL_MS = Number(params.get("ms") || "200");
+      const initialTemplate = params.get("template") || "circle_v1";
+      let hasFrame = false;
+      templateSel.value = initialTemplate;
+
+      function setTemplateImage() {
+        const tid = templateSel.value;
+        bg.src = `${API_BASE}/api/v2/template/${tid}/image.png?t=${Date.now()}`;
+      }
+
+      templateSel.addEventListener("change", setTemplateImage);
+      setTemplateImage();
+
+      draw.onerror = () => {
+        if (!hasFrame) {
+          statusEl.textContent = `live image not available yet (wand=${WAND_ID})`;
+        }
+      };
+
+      function tick() {
+        const ts = Date.now();
+        const liveUrl = `${API_BASE}/api/v1/wand/${WAND_ID}/live.png?t=${ts}`;
+        // Preload first, then swap in only on success to avoid flicker on transient failures.
+        const next = new Image();
+        next.onload = () => {
+          draw.src = liveUrl;
+          hasFrame = true;
+          statusEl.textContent =
+            `wand=${WAND_ID} template=${templateSel.value} live @ ${new Date(ts).toLocaleTimeString()}`;
+        };
+        next.onerror = () => {
+          if (!hasFrame) {
+            statusEl.textContent = `live image not available yet (wand=${WAND_ID})`;
+          }
+        };
+        next.src = liveUrl;
+      }
+
+      setInterval(tick, INTERVAL_MS);
+      tick();
+    </script>
+  </body>
+</html>

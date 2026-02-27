@@ -1,0 +1,15 @@
+udp:
+  host: "0.0.0.0"
+  port: 9999
+api:
+  host: "0.0.0.0"
+  port: 8000
+brain:
+  idle_timeout_ms: 250
+render:
+  canvas_size: 256
+  stroke_width: 3
+templates:
+  dir: "data/templates"
+outputs:
+  dir: "data/outputs"
