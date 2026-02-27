@@ -11,6 +11,7 @@
         <option value="infinity_v1">Infinity</option>
       </select>
       <span id="status" style="margin-left: 10px;">waiting...</span>
+      <span id="score" style="margin-left: 10px; font-weight: 700;"></span>
     </div>
     <div style="position: relative; width: 256px; height: 256px; border:1px solid #999; background:#0c0c0c;">
       <img id="bg" width="256" height="256" style="position:absolute; left:0; top:0; opacity:0.52; image-rendering:pixelated;" />
@@ -21,6 +22,7 @@
       const draw = document.getElementById("draw");
       const templateSel = document.getElementById("template");
       const statusEl = document.getElementById("status");
+      const scoreEl = document.getElementById("score");
       const params = new URLSearchParams(window.location.search);
       const defaultApiBase = `${window.location.protocol}//${window.location.hostname}:8000`;
       const API_BASE = params.get("api") || defaultApiBase;
@@ -28,11 +30,13 @@
       const INTERVAL_MS = Number(params.get("ms") || "200");
       const initialTemplate = params.get("template") || "circle_v1";
       let hasFrame = false;
+      let lastShownAttempt = null;
       templateSel.value = initialTemplate;
 
       function setTemplateImage() {
         const tid = templateSel.value;
         bg.src = `${API_BASE}/api/v2/template/${tid}/image.png?t=${Date.now()}`;
+        scoreEl.textContent = "";
       }
 
       templateSel.addEventListener("change", setTemplateImage);
@@ -65,6 +69,37 @@
 
       setInterval(tick, INTERVAL_MS);
       tick();
+
+      async function scoreTick() {
+        try {
+          const wandResp = await fetch(`${API_BASE}/api/v1/wand/${WAND_ID}`, { cache: "no-store" });
+          if (!wandResp.ok) return;
+          const wand = await wandResp.json();
+
+          if (wand.active) {
+            scoreEl.textContent = "drawing...";
+            return;
+          }
+
+          const scoreResp = await fetch(
+            `${API_BASE}/api/v2/score/latest?wand_id=${WAND_ID}&template_id=${templateSel.value}`,
+            { cache: "no-store" }
+          );
+          if (!scoreResp.ok) return;
+          const payload = await scoreResp.json();
+          const attemptId = payload.attempt_id;
+          if (attemptId !== lastShownAttempt) {
+            lastShownAttempt = attemptId;
+          }
+          const s = payload.best?.score;
+          scoreEl.textContent = `final score: ${s}`;
+        } catch (_e) {
+          // keep UI running even if score endpoint is temporarily unavailable
+        }
+      }
+
+      setInterval(scoreTick, 700);
+      scoreTick();
     </script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path as FSPath
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional
@@ -15,6 +16,13 @@ from brain.scoring import list_templates, compute_score
 # App + constants
 # ----------------------------
 app = FastAPI(title="FPGA-Wand Brain", version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 SERVICE_NAME = "wand-brain"
 SERVICE_VERSION = "0.1.0"

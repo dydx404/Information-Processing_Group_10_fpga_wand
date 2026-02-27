@@ -21,9 +21,9 @@ TEMPLATE_ID="${TEMPLATE_ID:-heart_v1}"   # circle_v1|triangle_v1|heart_v1|sine_v
 STROKE_ID="${STROKE_ID:-920000}"
 RATE="${RATE:-15}"
 DURATION="${DURATION:-45}"
-SHAPE="${SHAPE:-lissajous}"              # circle|spiral|lemniscate|lissajous
-NOISE_STD="${NOISE_STD:-0.008}"
-WANDER_STD="${WANDER_STD:-0.003}"
+SHAPE="${SHAPE:-heart}"                  # circle|spiral|lemniscate|lissajous|heart
+NOISE_STD="${NOISE_STD:-0.006}"
+WANDER_STD="${WANDER_STD:-0.002}"
 DRIFT_X="${DRIFT_X:-0.0}"
 DRIFT_Y="${DRIFT_Y:-0.0}"
 SEED="${SEED:-7}"
@@ -44,7 +44,7 @@ Options:
   --stroke-id <id>          stroke id (default: ${STROKE_ID})
   --rate <pps>              packets per second (default: ${RATE})
   --duration <sec>          stroke duration (default: ${DURATION})
-  --shape <name>            circle|spiral|lemniscate|lissajous (default: ${SHAPE})
+  --shape <name>            circle|spiral|lemniscate|lissajous|heart (default: ${SHAPE})
   --noise-std <v>           point jitter std (default: ${NOISE_STD})
   --wander-std <v>          slow wander std (default: ${WANDER_STD})
   --drift-x <v>             x drift over stroke (default: ${DRIFT_X})

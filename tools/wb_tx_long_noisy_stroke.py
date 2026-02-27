@@ -63,6 +63,20 @@ def base_point(t: float, shape: str) -> tuple[float, float]:
         y = 0.38 * math.sin(2.0 * ang)
         return 0.5 + x, 0.5 + y
 
+    if shape == "heart":
+        # Parametric heart, matched to template orientation/scale.
+        ang = (2.0 * math.pi) * t
+        x = 16 * (math.sin(ang) ** 3)
+        y = (
+            13 * math.cos(ang)
+            - 5 * math.cos(2 * ang)
+            - 2 * math.cos(3 * ang)
+            - math.cos(4 * ang)
+        )
+        nx = 0.5 + (x / 18.0) * 0.38
+        ny = 0.5 - ((y - 2.0) / 18.0) * 0.38
+        return nx, ny
+
     # default: slow circle
     ang = 2.0 * math.pi * t
     return 0.5 + 0.42 * math.cos(ang), 0.5 + 0.42 * math.sin(ang)
@@ -181,8 +195,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--duration", type=float, default=30.0, help="seconds (long button-hold)")
     p.add_argument(
         "--shape",
-        choices=["circle", "spiral", "lemniscate", "lissajous"],
-        default="lemniscate",
+        choices=["circle", "spiral", "lemniscate", "lissajous", "heart"],
+        default="heart",
         help="trajectory shape",
     )
     p.add_argument("--noise-std", type=float, default=0.006, help="fast gaussian jitter std in normalized units")
