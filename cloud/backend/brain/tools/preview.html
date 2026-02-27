@@ -1,12 +1,60 @@
 <!doctype html>
 <html>
   <body>
-    <img id="img" width="256" height="256" />
+    <p id="status">waiting...</p>
+    <img id="img" width="256" height="256" style="border:1px solid #999" />
     <script>
       const img = document.getElementById("img");
-      setInterval(() => {
-        img.src = `http://localhost:8000/v1/render/latest.png?wand_id=1&t=${Date.now()}`;
-      }, 200);
+      const statusEl = document.getElementById("status");
+      const params = new URLSearchParams(window.location.search);
+      const defaultApiBase = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const API_BASE = params.get("api") || defaultApiBase;
+      const WAND_ID = Number(params.get("wand") || "1");
+      const INTERVAL_MS = Number(params.get("ms") || "200");
+      let lastAttemptId = null;
+
+      img.onerror = () => {
+        statusEl.textContent = `image load failed from ${API_BASE} (wand=${WAND_ID})`;
+      };
+
+      async function tick() {
+        const ts = Date.now();
+        const liveUrl = `${API_BASE}/api/v1/wand/${WAND_ID}/live.png?t=${ts}`;
+
+        // Try live endpoint first (new backend). If unavailable, fallback to latest attempt image.
+        try {
+          const r = await fetch(liveUrl, { method: "HEAD", cache: "no-store" });
+          if (r.ok) {
+            img.src = liveUrl;
+            statusEl.textContent = `wand=${WAND_ID} live @ ${new Date(ts).toLocaleTimeString()}`;
+            return;
+          }
+        } catch (_e) {}
+
+        try {
+          const latestResp = await fetch(
+            `${API_BASE}/api/v1/attempt/latest?wand_id=${WAND_ID}`,
+            { cache: "no-store" }
+          );
+          if (!latestResp.ok) {
+            statusEl.textContent = `no attempt yet (wand=${WAND_ID})`;
+            return;
+          }
+          const latest = await latestResp.json();
+          const attemptId = latest.attempt_id;
+          if (attemptId !== lastAttemptId) {
+            lastAttemptId = attemptId;
+            img.src = `${API_BASE}/api/v1/attempt/${attemptId}/image.png?t=${Date.now()}`;
+          }
+          statusEl.textContent =
+            `wand=${WAND_ID} latest attempt=${attemptId} points=${latest.num_points}`;
+        } catch (_e) {
+          statusEl.textContent = `api unreachable: ${API_BASE}`;
+        }
+      }
+
+      setInterval(tick, INTERVAL_MS);
+      tick();
     </script>
   </body>
 </html>

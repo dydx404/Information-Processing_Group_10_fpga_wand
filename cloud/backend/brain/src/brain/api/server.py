@@ -28,6 +28,7 @@ Point = Tuple[float, float, int]  # (x, y, timestamp_ms)
 @dataclass
 class AttemptBuffer:
     points: List[Point] = field(default_factory=list)
+    last_live_render_ms: int = 0
 
 @dataclass
 class FinalResult:
@@ -62,6 +63,8 @@ class BrainState:
         self.attempt_index: Dict[int, FinalResult] = {}
         # live status per wand_id (MVP assumes wand_id unique in system)
         self.wand_status: Dict[int, WandStatus] = {}
+        # latest live-rendered path per wand_id while attempt is active
+        self.live_render_path: Dict[int, str] = {}
         self.last_event: Optional[PointEvent] = None
 
     def _ensure_wand(self, wand_id: int) -> WandStatus:
@@ -98,6 +101,18 @@ class BrainState:
         buf.points.append((ev.x, ev.y, ev.timestamp_ms))
         if len(buf.points) > 5000:
             buf.points = buf.points[-5000:]
+        self._render_live_if_due(ev.wand_id, buf)
+
+    def _render_live_if_due(self, wand_id: int, buf: AttemptBuffer, interval_ms: int = 80):
+        now_ms = int(time.time() * 1000)
+        # Render first point quickly, then throttle to avoid excessive I/O.
+        if buf.last_live_render_ms and (now_ms - buf.last_live_render_ms) < interval_ms:
+            return
+        img = rasterize(buf.points, size=256, stroke=3)
+        live_path = OUTDIR / f"wand_{wand_id}_live.png"
+        img.save(live_path)
+        self.live_render_path[wand_id] = str(live_path)
+        buf.last_live_render_ms = now_ms
 
     def _finalize(self, device: int, wand: int, attempt_id: int) -> Optional[FinalResult]:
         key = (device, wand, attempt_id)
@@ -128,6 +143,7 @@ class BrainState:
 
         self.last_result[(device, wand)] = res
         self.attempt_index[attempt_id] = res  # MVP lookup by wand+attempt
+        self.live_render_path[wand] = str(out_path)
         self.attempts.pop(key, None)
         return res
 
@@ -231,6 +247,22 @@ def api_attempt_image(
     if res is None:
         raise HTTPException(status_code=404, detail="attempt image not found")
     resp = FileResponse(res.render_path, media_type="image/png")
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
+
+@app.get("/api/v1/wand/{wand_id}/live.png")
+def api_wand_live_image(wand_id: int = Path(..., ge=1)):
+    render_path = state.live_render_path.get(wand_id)
+    if not render_path:
+        # Fallback: serve latest finalized attempt for this wand if available.
+        candidates = [r for r in state.last_result.values() if r.wand_id == wand_id]
+        if not candidates:
+            raise HTTPException(status_code=404, detail="no live image for this wand")
+        render_path = max(candidates, key=lambda r: r.finalized_at_ms).render_path
+    resp = FileResponse(render_path, media_type="image/png")
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"

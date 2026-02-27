@@ -11,7 +11,7 @@ import socket
 import struct
 import time
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import List
 
 # wb-point-v1 packet: 24 bytes, little-endian
 WB_STRUCT = struct.Struct("<HBBHHIIhhI")
@@ -175,8 +175,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="25,50,100",
         help="comma-separated rates to test (overrides --rate)",
     )
-    p.add_argument("--duration", type=float, default=3.0, help="seconds per rate")
+    p.add_argument("--duration", type=float, default=8.0, help="seconds per rate")
     p.add_argument("--pause", type=float, default=0.5, help="seconds between rates")
+    p.add_argument("--repeat", type=int, default=1, help="repeat whole rate sweep N times")
     p.add_argument("--pattern", choices=["line", "circle"], default="line")
     return p
 
@@ -192,29 +193,36 @@ def main() -> None:
     stroke_id = args.stroke_start
 
     print(f"Target: {args.host}:{args.port} device={args.device} wand={args.wand}")
-    print(f"Rates: {rates} pps, duration={args.duration}s each, pattern={args.pattern}")
+    print(
+        f"Rates: {rates} pps, duration={args.duration}s each, "
+        f"repeat={args.repeat}, pattern={args.pattern}"
+    )
 
-    for idx, rate in enumerate(rates):
-        packet_number, stats = send_stroke(
-            sock,
-            args.host,
-            args.port,
-            device_number=args.device,
-            wand_id=args.wand,
-            stroke_id=stroke_id,
-            packet_number_start=packet_number,
-            rate_hz=rate,
-            duration_s=args.duration,
-            pattern=args.pattern,
-        )
-        print(
-            f"[{idx+1}/{len(rates)}] stroke_id={stroke_id} "
-            f"rate={stats.rate_hz:.1f} pps sent={stats.sent_points} "
-            f"achieved~{stats.achieved_pps:.2f} pps mean_dt={stats.mean_dt_ms:.2f} ms"
-        )
-        stroke_id += 1
-        if idx != len(rates) - 1:
-            time.sleep(max(0.0, args.pause))
+    total_steps = len(rates) * max(1, args.repeat)
+    step = 0
+    for rep in range(max(1, args.repeat)):
+        for idx, rate in enumerate(rates):
+            step += 1
+            packet_number, stats = send_stroke(
+                sock,
+                args.host,
+                args.port,
+                device_number=args.device,
+                wand_id=args.wand,
+                stroke_id=stroke_id,
+                packet_number_start=packet_number,
+                rate_hz=rate,
+                duration_s=args.duration,
+                pattern=args.pattern,
+            )
+            print(
+                f"[{step}/{total_steps}] stroke_id={stroke_id} "
+                f"rate={stats.rate_hz:.1f} pps sent={stats.sent_points} "
+                f"achieved~{stats.achieved_pps:.2f} pps mean_dt={stats.mean_dt_ms:.2f} ms"
+            )
+            stroke_id += 1
+            if not (rep == args.repeat - 1 and idx == len(rates) - 1):
+                time.sleep(max(0.0, args.pause))
 
     print("Done.")
 
