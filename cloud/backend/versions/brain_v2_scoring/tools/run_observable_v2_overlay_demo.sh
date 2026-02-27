@@ -97,6 +97,13 @@ if ! curl -fsS "http://${API_HOST}:${API_PORT}/api/v1/health" >/dev/null; then
   exit 1
 fi
 
+if ! curl -fsS "http://${API_HOST}:${API_PORT}/api/v2/templates" >/dev/null; then
+  echo "This server does not expose /api/v2/templates." >&2
+  echo "Likely running MVP backend, not brain_v2_scoring." >&2
+  echo "Start v2 backend on EC2 from cloud/backend/versions/brain_v2_scoring and retry." >&2
+  exit 1
+fi
+
 if ! curl -fsS "http://${API_HOST}:${API_PORT}/api/v2/template/${TEMPLATE_ID}/image.png" >/dev/null; then
   echo "Template check failed: ${TEMPLATE_ID} not accessible on API host ${API_HOST}:${API_PORT}" >&2
   echo "Available templates: curl http://${API_HOST}:${API_PORT}/api/v2/templates" >&2
