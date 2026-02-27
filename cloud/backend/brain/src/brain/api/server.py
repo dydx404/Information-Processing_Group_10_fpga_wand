@@ -240,7 +240,7 @@ def api_attempt_latest(wand_id: int = Query(..., ge=1)):
     return _attempt_result_payload(res)
 
 # 5) /api/v1/attempt/{attempt_id}/image.png
-@app.get("/api/v1/attempt/{attempt_id}/image.png")
+@app.api_route("/api/v1/attempt/{attempt_id}/image.png", methods=["GET", "HEAD"])
 def api_attempt_image(
     attempt_id: int = Path(..., ge=0),):
     res = state.attempt_index.get(attempt_id)
@@ -253,7 +253,7 @@ def api_attempt_image(
     return resp
 
 
-@app.get("/api/v1/wand/{wand_id}/live.png")
+@app.api_route("/api/v1/wand/{wand_id}/live.png", methods=["GET", "HEAD"])
 def api_wand_live_image(wand_id: int = Path(..., ge=1)):
     render_path = state.live_render_path.get(wand_id)
     if not render_path:
