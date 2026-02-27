@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path as FSPath
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional
+import os
 import time
 
 from brain.ingest.udp_rx import UdpReceiver
@@ -110,7 +111,9 @@ class BrainState:
             return
         img = rasterize(buf.points, size=256, stroke=3)
         live_path = OUTDIR / f"wand_{wand_id}_live.png"
-        img.save(live_path)
+        tmp_path = OUTDIR / f".wand_{wand_id}_live.tmp.png"
+        img.save(tmp_path)
+        os.replace(tmp_path, live_path)
         self.live_render_path[wand_id] = str(live_path)
         buf.last_live_render_ms = now_ms
 
