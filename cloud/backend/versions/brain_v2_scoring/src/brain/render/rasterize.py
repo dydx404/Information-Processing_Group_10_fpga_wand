@@ -1,7 +1,5 @@
 from __future__ import annotations
 from typing import List, Tuple
-import math
-import numpy as np
 from PIL import Image, ImageDraw
 
 Point = Tuple[float, float, int]  # (x, y, t)
@@ -32,7 +30,27 @@ def _normalize_xy(points: List[Point], size: int, margin: int = 10):
         out.append((int(round(nx)), int(round(ny))))
     return out
 
-def rasterize(points: List[Point], size: int = 256, stroke: int = 3) -> Image.Image:
+
+def _fixed_xy(points: List[Point], size: int, margin: int = 10):
+    """
+    Maps normalized protocol coordinates [0,1] directly into a fixed canvas.
+    This keeps viewport stable across time (no reframe/zoom during drawing).
+    """
+    span = max(1, size - 2 * margin)
+    out = []
+    for x, y, _t in points:
+        nx = margin + int(round(max(0.0, min(1.0, x)) * span))
+        ny = margin + int(round(max(0.0, min(1.0, y)) * span))
+        out.append((nx, ny))
+    return out
+
+
+def rasterize(
+    points: List[Point],
+    size: int = 256,
+    stroke: int = 3,
+    normalize_view: bool = True,
+) -> Image.Image:
     """
     Returns a grayscale PIL image (L mode) with white stroke on black background.
     """
@@ -40,7 +58,10 @@ def rasterize(points: List[Point], size: int = 256, stroke: int = 3) -> Image.Im
     if not points:
         return img
 
-    xy = _normalize_xy(points, size=size, margin=10)
+    if normalize_view:
+        xy = _normalize_xy(points, size=size, margin=10)
+    else:
+        xy = _fixed_xy(points, size=size, margin=10)
     draw = ImageDraw.Draw(img)
 
     if len(xy) == 1:

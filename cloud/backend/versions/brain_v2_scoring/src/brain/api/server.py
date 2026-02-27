@@ -112,7 +112,7 @@ class BrainState:
         # Render first point quickly, then throttle to avoid excessive I/O.
         if buf.last_live_render_ms and (now_ms - buf.last_live_render_ms) < interval_ms:
             return
-        img = rasterize(buf.points, size=256, stroke=3)
+        img = rasterize(buf.points, size=256, stroke=3, normalize_view=False)
         live_path = OUTDIR / f"wand_{wand_id}_live.png"
         tmp_path = OUTDIR / f".wand_{wand_id}_live.tmp.png"
         img.save(tmp_path)
@@ -132,7 +132,7 @@ class BrainState:
         end_ms = pts[-1][2]
         finalized_at_ms = int(time.time() * 1000)
 
-        img = rasterize(pts, size=256, stroke=3)
+        img = rasterize(pts, size=256, stroke=3, normalize_view=False)
         out_path = OUTDIR / f"dev{device}_wand{wand}_attempt{attempt_id}_{finalized_at_ms}.png"
         img.save(out_path)
 
