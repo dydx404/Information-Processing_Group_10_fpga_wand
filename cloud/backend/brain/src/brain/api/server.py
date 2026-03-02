@@ -6,6 +6,10 @@ from typing import Dict, List, Tuple, Optional
 import os
 import time
 
+from database.database import SessionLocal
+from database.models import Attempt as DBAttempt
+from sqlalchemy.orm import Session
+
 from brain.ingest.udp_rx import UdpReceiver
 from brain.ingest.parser import parse_packet, PointEvent
 from brain.render.rasterize import rasterize
@@ -118,6 +122,10 @@ class BrainState:
         buf.last_live_render_ms = now_ms
 
     def _finalize(self, device: int, wand: int, attempt_id: int) -> Optional[FinalResult]:
+        """
+        Finalize an attempt: render the raster image, save it to disk,
+        persist to database, update live state, and clean in-memory buffer.
+        """
         key = (device, wand, attempt_id)
         buf = self.attempts.get(key)
         if buf is None or not buf.points:
@@ -129,10 +137,12 @@ class BrainState:
         end_ms = pts[-1][2]
         finalized_at_ms = int(time.time() * 1000)
 
+        # Render attempt image
         img = rasterize(pts, size=256, stroke=3)
         out_path = OUTDIR / f"dev{device}_wand{wand}_attempt{attempt_id}_{finalized_at_ms}.png"
         img.save(out_path)
 
+        # Build result object
         res = FinalResult(
             device_number=device,
             wand_id=wand,
@@ -144,10 +154,40 @@ class BrainState:
             render_path=str(out_path),
         )
 
+        # --- Persist to database ---
+        from database.database import SessionLocal
+        from database.models import Attempt as DBAttempt
+        from sqlalchemy.orm import Session
+
+        db: Session = SessionLocal()
+        try:
+            db_attempt = DBAttempt(
+                wand_id=wand,
+                attempt_id=attempt_id,
+                device_number=device,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                finalized_at_ms=finalized_at_ms,
+                num_points=len(pts),
+                render_path=str(out_path),
+                status=res.status,
+                best_template_id=res.best_template_id,
+                best_template_name=res.best_template_name,
+                score=res.score,
+            )
+            db.add(db_attempt)
+            db.commit()
+            db.refresh(db_attempt)
+        finally:
+            db.close()
+        # -----------------------------
+
+        # Update in-memory state
         self.last_result[(device, wand)] = res
         self.attempt_index[attempt_id] = res  # MVP lookup by wand+attempt
         self.live_render_path[wand] = str(out_path)
         self.attempts.pop(key, None)
+
         return res
 
     def snapshot(self):
