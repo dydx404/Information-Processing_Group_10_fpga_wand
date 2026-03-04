@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, HTTPException, Path, Query, Depends, APIRouter
 from fastapi.responses import FileResponse
 from pathlib import Path as FSPath
 from dataclasses import dataclass, field
@@ -26,6 +26,13 @@ OUTDIR = FSPath("data/outputs")
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
 Point = Tuple[float, float, int]  # (x, y, timestamp_ms)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # ----------------------------
 # Models
@@ -270,6 +277,23 @@ def _attempt_result_payload(res: FinalResult):
         },
         "image_png": f"/api/v1/attempt/{res.attempt_id}/image.png",
     }
+
+@app.get("/api/v1/database/attempts")
+def api_database_attempts(db: Session = Depends(get_db)):
+    attempts = db.query(DBAttempt).order_by(DBAttempt.id.desc()).limit(20).all()
+    return [
+        {
+            "id": a.id,
+            "wand_id": a.wand_id,
+            "attempt_id": a.attempt_id,
+            "device_number": a.device_number,
+            "num_points": a.num_points,
+            "score": a.score,
+            "status": a.status,
+            "created_at": str(a.created_at),
+        }
+        for a in attempts
+    ]
 
 # 4) /api/v1/attempt/latest?wand_id=
 @app.get("/api/v1/attempt/latest")

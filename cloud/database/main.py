@@ -1,12 +1,13 @@
 import os
 import time
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, HTTPException, Path, Query, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path as FSPath
+from sqlalchemy.orm import Session
 
 from database.database import Base, engine, SessionLocal
 from database.models import Attempt
@@ -112,6 +113,31 @@ udp = UdpReceiver(host="0.0.0.0", port=41000, on_packet=on_udp_packet)
 @app.on_event("startup")
 def startup():
     udp.start()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/api/v1/database/attempts")
+def api_database_attempts(db: Session = Depends(get_db)):
+    attempts = db.query(Attempt).order_by(Attempt.id.desc()).limit(20).all()
+    return [
+        {
+            "id": a.id,
+            "wand_id": a.wand_id,
+            "attempt_id": a.attempt_id,
+            "device_number": a.device_number,
+            "num_points": a.num_points,
+            "score": a.score,
+            "status": a.status,
+            "created_at": str(a.created_at),
+        }
+        for a in attempts
+    ]
 
 
 # ----------------------------
