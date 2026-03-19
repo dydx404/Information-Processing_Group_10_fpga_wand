@@ -73,10 +73,10 @@ TX simulation scripts (repo root `software/tools/`):
 ```mermaid
 flowchart LR
   subgraph Sensing[Wand + PYNQ Side]
-    ESP[ESP32 Button/IR Events]
-    CAM[IR Camera Tracking]
+    WAND[LED Wand Tip]
+    CAM[Camera Tracking]
     PYNQ[PYNQ UDP TX\nwb-point-v1 packer]
-    ESP --> PYNQ
+    WAND --> CAM
     CAM --> PYNQ
   end
 

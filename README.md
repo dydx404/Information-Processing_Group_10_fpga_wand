@@ -40,7 +40,6 @@ The architecture deliberately separates:
 
 - [hardware/README.md](hardware/README.md)
 - [hardware/wand/current_led_wand/README.md](hardware/wand/current_led_wand/README.md)
-- [hardware/wand/legacy_esp32/README.md](hardware/wand/legacy_esp32/README.md)
 - [hardware/camera/README.md](hardware/camera/README.md)
 
 ### FPGA

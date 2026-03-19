@@ -15,8 +15,6 @@ project.
   leaderboard, and database views.
 - [protocol/brain_api/README.md](protocol/brain_api/README.md)
   expands the Brain HTTP APIs into separate detailed guides by feature area.
-- [protocol/esp-wand_protocol.md](protocol/esp-wand_protocol.md)
-  documents the original ESP32 button-event concept for the wand side.
 
 ## Design Principle
 

@@ -4,9 +4,8 @@ This repository contains the group coursework project for
 **Information Processing – Group 10**.
 
 The system spans multiple layers:
-- ESP32 firmware (wand)
-- FPGA / Vivado hardware and drivers
-- Node-side software
+- Hardware notes and physical setup
+- FPGA / Vivado hardware and PYNQ runtime
 - Cloud backend and database
 
 To keep the project stable, assessable, and reproducible, all
@@ -29,9 +28,9 @@ Create branches from `main` using:
 feature/<layer>-<short-description>
 
 Examples:
-- `feature/esp32-imu-driver`
+- `feature/hardware-camera-mount`
 - `feature/fpga-dma-filter`
-- `feature/backend-websocket`
+- `feature/backend-leaderboards`
 - `feature/protocol-v1`
 ---
 
@@ -40,23 +39,21 @@ Examples:
 Please place files only in their intended locations.
 
 ### Wand / Edge Node
-- `wand/esp32/`  
-  ESP32 firmware (PlatformIO / Arduino / ESP-IDF)
+- `hardware/`
+  physical build notes for the LED wand and camera setup
 
-- `wand/fpga/`  
+- `FPGA/`
   FPGA-related work:
-  - `vivado/` → TCL scripts, IP sources, constraints
-  - `overlays/` → final `.bit` / `.hwh` files only
-  - `drivers/` → Python or C drivers
-  - `node_software/` → PYNQ / node-side software
+  - `designs/` → Vivado exports, IP sources, screenshots, reports
+  - `runtime/` → PYNQ / node-side software
 
 ### Cloud
-- `cloud/backend/` → API and session logic
-- `cloud/database/` → schema and migrations
-- `cloud/infra/` → deployment scripts (e.g. EC2)
+- `software/cloud/backend/` → API and session logic
+- `software/cloud/database/` → schema and persistence models
+- `software/cloud/infra/` → deployment notes and infrastructure helpers
 
 ### Shared
-- `protocol/` → message schemas and examples
+- `software/protocol/` → message schemas and examples
 - `docs/` → architecture, testing, report assets
 
 If you are unsure where something belongs, ask before committing.
@@ -91,11 +88,13 @@ Goal: the design should be reproducible, not archived.
 
 ---
 
-## 5. ESP32 Rules
+## 5. Hardware Notes
 
-- Use standard toolchains (PlatformIO preferred)
-- Document board-specific setup in `wand/esp32/README.md`
-- Do not commit build artifacts (`.pio/`, `.elf`, `.bin`)
+- Keep physical build notes under `hardware/`
+- Do not commit large raw media dumps; prefer selected photos, diagrams, and
+  concise setup notes
+- If a hardware concept was not part of the final integrated system, do not
+  treat it as a required path in active documentation
 
 ---
 
@@ -138,5 +137,3 @@ If something is unclear:
 - Or open a GitHub Issue
 
 By contributing to this repository, you agree to follow this guide.
-
-

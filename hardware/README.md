@@ -5,8 +5,7 @@ This directory contains the physical build-side documentation for the project.
 ## Subsystems
 
 - [wand/](wand/)
-  the physical wand implementations, including the final 3D-printed LED wand
-  and the older ESP32 concept.
+  the physical wand implementation used by the final system.
 - [camera/](camera/)
   camera-side mounting, placement, and sensing notes.
 

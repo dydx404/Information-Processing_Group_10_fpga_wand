@@ -13,6 +13,7 @@ Recommended contents:
 
 Important context:
 
-- this final wand did not depend on the ESP32 firmware path
-- the live system treated the wand mainly as a bright tracked tip for the
+- this final wand was used as a simple bright tracked tip for the
   camera/FPGA pipeline
+- the repo’s active implementation does not require a separate embedded wand
+  firmware path
