@@ -1,13 +1,34 @@
 # Wand Brain HTTP API Overview
 
-This document summarizes the current HTTP-facing interfaces exposed by the cloud
-service.
+This document is the top-level index for the Brain service's HTTP APIs.
+
+The service is composed from:
+
+- the base live runtime in
+  [`../../cloud/backend/versions/brain_v2_scoring/src/brain/api/server.py`](../../cloud/backend/versions/brain_v2_scoring/src/brain/api/server.py)
+- the wrapper layer in
+  [`../../cloud/main.py`](../../cloud/main.py)
+
+The base runtime owns live ingest and rendering. The wrapper adds persistence,
+template selection, node control, leaderboards, and the frontend shell.
+
+## Served UI Routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | serve the main dashboard page |
+| `GET` | `/frontend/*` | serve frontend static assets |
+
+These are composed in [`software/cloud/main.py`](../../cloud/main.py).
 
 ## API Families
 
-### `/api/v1/*` Live Runtime
+### `/api/v1/*` Live Runtime And History
 
-Core live-status and rendered-image APIs:
+Detailed guide:
+[brain_api/live_runtime_and_plotting.md](./brain_api/live_runtime_and_plotting.md)
+
+Main routes:
 
 - `GET /api/v1/health`
 - `GET /api/v1/wands`
@@ -18,7 +39,12 @@ Core live-status and rendered-image APIs:
 - `GET /api/v1/database/health`
 - `GET /api/v1/database/attempts`
 
-### `/api/v2/*` Templates And Scoring
+### `/api/v2/*` Templates, Target Selection, And Scoring
+
+Detailed guide:
+[brain_api/templates_scoring_and_target_selection.md](./brain_api/templates_scoring_and_target_selection.md)
+
+Main routes:
 
 - `GET /api/v2/templates`
 - `GET /api/v2/template/{template_id}/image.png`
@@ -27,7 +53,14 @@ Core live-status and rendered-image APIs:
 - `GET /api/v2/score/latest?wand_id=<id>&template_id=<optional>`
 - `GET /api/v2/score/attempt/{attempt_id}?template_id=<optional>`
 
-### `/api/v3/*` Node Control And Leaderboards
+### `/api/v3/*` Node Control, Leaderboards, And Persistence Views
+
+Detailed guides:
+
+- [brain_api/node_control.md](./brain_api/node_control.md)
+- [brain_api/leaderboards_and_persistence.md](./brain_api/leaderboards_and_persistence.md)
+
+Main routes:
 
 - `GET /api/v3/node-controls`
 - `GET /api/v3/node/{device_number}/control`
@@ -37,17 +70,19 @@ Core live-status and rendered-image APIs:
 - `GET /api/v3/leaderboards`
 - `POST /api/v3/leaderboards/claim`
 
-## Architectural Notes
+## Cross-Cutting Architectural Notes
 
-- The website is a polling dashboard over HTTP.
-- UDP is used only for live point ingestion.
-- The frontend does not talk to the UDP receiver directly.
-- Live attempt state is held in memory.
-- Finalized attempts, scores, and champions are persisted.
+- The website is a polling dashboard over HTTP, not a WebSocket application.
+- UDP is reserved for live point ingestion only.
+- The frontend never talks directly to the UDP receiver.
+- Live attempt state is held in memory inside the runtime.
+- Finalized attempts, scores, and champions are persisted by the wrapper layer.
 
 ## Important Semantics
 
-- Public `attempt_id` is the backend's internal finalized-attempt identifier.
-- UDP `stroke_id` is treated as a source-side stroke identifier and is surfaced
-  separately as `source_stroke_id` where relevant.
+- Public `attempt_id` is the backend-owned finalized-attempt identifier.
+- UDP `stroke_id` is treated as source metadata and is exposed separately as
+  `source_stroke_id`.
 - Node control is a separate HTTP control plane from the UDP data path.
+- Finalized-attempt history and leaderboard data are layered on top of the
+  lower-level live runtime.

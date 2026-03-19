@@ -35,3 +35,26 @@ For most contributors, the most useful files are:
 - [frontend/index.html](frontend/index.html)
 - [database/models.py](database/models.py)
 - [backend/versions/brain_v2_scoring/src/brain/api/server.py](backend/versions/brain_v2_scoring/src/brain/api/server.py)
+
+## API Documentation
+
+The detailed API guides live under the protocol docs:
+
+- [../protocol/protocol/brain-web_api.md](../protocol/protocol/brain-web_api.md)
+- [../protocol/protocol/brain_api/README.md](../protocol/protocol/brain_api/README.md)
+
+Those documents explain the served Brain features by API family, including:
+
+- live plotting and attempt images
+- templates and scoring
+- node control
+- leaderboards and persistence
+
+## Architecture Reports
+
+More formal backend reports live under:
+
+- [report/README.md](report/README.md)
+- [report/backend_system_report.md](report/backend_system_report.md)
+- [report/webpage_architecture_report.md](report/webpage_architecture_report.md)
+- [report/database_architecture_report.md](report/database_architecture_report.md)

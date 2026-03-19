@@ -21,6 +21,18 @@ That split keeps the repo easier to present:
 - starts a new stroke on the first valid point after idle
 - sends one explicit `STROKE_END` packet after a short no-blob gap
 
+## Deep Dive
+
+For the actual deployed signal path and control decisions, see
+[ps_pl_flow.md](ps_pl_flow.md). That document walks through:
+
+- camera frame preprocessing on the PS
+- DMA transfer into the custom centroid IP
+- register readback from the PL
+- fresh-result detection using `frame_id`
+- UDP stroke generation
+- server-driven node control and acknowledgements
+
 ## Minimal Notebook Pattern
 
 ```python

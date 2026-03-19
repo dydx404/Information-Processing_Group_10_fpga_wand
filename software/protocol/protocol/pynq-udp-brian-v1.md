@@ -9,6 +9,9 @@
 This protocol is the low-latency point-stream data plane used by the PYNQ node
 to send centroid-derived drawing points to the cloud backend.
 
+For the end-to-end implementation walkthrough, see
+[`pynq-udp-flow.md`](./pynq-udp-flow.md).
+
 ## Packet Layout
 
 Struct format:

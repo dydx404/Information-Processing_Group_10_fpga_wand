@@ -5,6 +5,7 @@ Useful starting points:
 - [architecture/overview.md](architecture/overview.md)
 - [http_node_control.md](http_node_control.md)
 - [testing/test-plan.md](testing/test-plan.md)
+- [testing/system_validation_report.md](testing/system_validation_report.md)
 
 The `group/` subtree contains coursework and team-planning material rather than
 the authoritative runtime architecture.

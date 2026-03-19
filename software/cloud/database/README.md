@@ -47,3 +47,7 @@ The default SQLite file is created under:
 - `software/cloud/data/fpgawand.sqlite3`
 
 That file is runtime data and should not normally be committed to GitHub.
+
+For a fuller persistence-layer report, see:
+
+- [../report/database_architecture_report.md](../report/database_architecture_report.md)

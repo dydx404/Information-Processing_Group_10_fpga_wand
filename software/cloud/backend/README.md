@@ -23,6 +23,15 @@ Key files:
 - [versions/brain_v2_scoring/src/brain/render/rasterize.py](versions/brain_v2_scoring/src/brain/render/rasterize.py)
 - [versions/brain_v2_scoring/src/brain/scoring/similarity.py](versions/brain_v2_scoring/src/brain/scoring/similarity.py)
 
+## Related Docs
+
+The protocol and API documentation that explains this runtime is here:
+
+- [../../protocol/protocol/pynq-udp-brian-v1.md](../../protocol/protocol/pynq-udp-brian-v1.md)
+- [../../protocol/protocol/pynq-udp-flow.md](../../protocol/protocol/pynq-udp-flow.md)
+- [../../protocol/protocol/brain-web_api.md](../../protocol/protocol/brain-web_api.md)
+- [../../protocol/protocol/brain_api/README.md](../../protocol/protocol/brain_api/README.md)
+
 ## Deployment Note
 
 On EC2, this runtime is copied into `cloud/alt_live_console/brain_runtime` for

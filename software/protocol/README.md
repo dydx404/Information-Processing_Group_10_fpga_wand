@@ -7,9 +7,14 @@ project.
 
 - [protocol/pynq-udp-brian-v1.md](protocol/pynq-udp-brian-v1.md)
   defines the fixed-size UDP point-stream packet from PYNQ to Wand Brain.
+- [protocol/pynq-udp-flow.md](protocol/pynq-udp-flow.md)
+  explains how the PYNQ sender, UDP receiver, parser, and backend state machine
+  use that packet format end to end.
 - [protocol/brain-web_api.md](protocol/brain-web_api.md)
-  summarizes the HTTP APIs used by the frontend, control plane, and database
-  views.
+  indexes the HTTP API families used by the frontend, control plane, scoring,
+  leaderboard, and database views.
+- [protocol/brain_api/README.md](protocol/brain_api/README.md)
+  expands the Brain HTTP APIs into separate detailed guides by feature area.
 - [protocol/esp-wand_protocol.md](protocol/esp-wand_protocol.md)
   documents the original ESP32 button-event concept for the wand side.
 

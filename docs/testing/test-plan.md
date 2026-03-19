@@ -3,6 +3,9 @@
 This document summarizes the practical validation strategy for the current
 system.
 
+For the outcome-oriented companion document, see
+[system_validation_report.md](./system_validation_report.md).
+
 ## 1. Cloud Service Sanity Check
 
 Start the cloud app:
