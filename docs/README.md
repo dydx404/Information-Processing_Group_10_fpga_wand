@@ -12,6 +12,6 @@ the authoritative runtime architecture.
 For code-oriented entrypoints, also see:
 
 - [../README.md](../README.md)
-- [../cloud/README.md](../cloud/README.md)
-- [../wand/README.md](../wand/README.md)
-- [../tools/README.md](../tools/README.md)
+- [../hardware/README.md](../hardware/README.md)
+- [../FPGA/README.md](../FPGA/README.md)
+- [../software/README.md](../software/README.md)

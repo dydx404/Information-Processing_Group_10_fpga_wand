@@ -1,96 +1,69 @@
 # FPGA-Wand
 
-Distributed FPGA-to-cloud wand tracking, drawing, and scoring system built for
-Information Processing Group 10.
+Distributed wand-tracking, drawing, and scoring system built for Information
+Processing Group 10.
 
-## What The System Does
+## Top-Level Structure
 
-The live system turns a bright wand tip into a scored drawing:
+The repo is now organized around three main implementation areas:
 
-1. A PYNQ board captures frames from a camera.
-2. The FPGA design computes centroid statistics for bright pixels.
-3. The PYNQ PS software filters those results and emits one UDP packet per valid
-   point.
-4. The EC2 Wand Brain service reconstructs each stroke in memory, rasterizes it
-   into a drawing, scores it against a selected template, and stores finalized
-   attempts in a database.
-5. A browser-based live console polls the service for live status, controls,
-   recent attempts, and leaderboards.
+- [hardware/](hardware/)
+  physical artefacts and subsystem notes for the wand and camera setup.
+- [FPGA/](FPGA/)
+  PYNQ / FPGA runtime code plus archived Vivado-style design artefacts.
+- [software/](software/)
+  EC2-side cloud service, protocol docs, and software-side utilities.
 
-The system deliberately separates the fast data path from the flexible control
-path:
+Supporting documentation still lives under [docs/](docs/).
 
-- UDP is the low-latency point-stream data plane.
-- HTTP is the control and dashboard plane.
+## System Overview
 
-## Current Architecture
+The live system turns a bright LED wand tip into a scored drawing:
 
-### 1. PYNQ Node
+1. The camera observes the wand tip.
+2. The FPGA design computes centroid-style statistics for bright pixels.
+3. The PYNQ PS software filters the result and emits one UDP point packet per
+   valid sample.
+4. The EC2 Wand Brain service reconstructs strokes in memory, rasterizes them,
+   scores them against templates, and stores finalized attempts.
+5. A browser dashboard polls the cloud service for live status, control,
+   attempts, timing, and leaderboards.
 
-The node-side logic lives primarily under [wand/](wand/).
+The architecture deliberately separates:
 
-- PL accelerates centroid-style pixel reduction.
-- PS handles camera capture, preprocessing, DMA, MMIO reads, validity checks,
-  local sketching, and networking.
-- The PS sender packages points using the `wb-point-v1` binary UDP protocol and
-  also polls HTTP node-control endpoints from the server.
+- UDP as the low-latency point-stream data plane
+- HTTP as the control and dashboard plane
 
-Key files:
+## Where To Look
 
-- [wand/fpga/pynq_wand_brain_demo.py](wand/fpga/pynq_wand_brain_demo.py)
-- [wand/fpga/pynq_udp_bridge.py](wand/fpga/pynq_udp_bridge.py)
+### Hardware
 
-### 2. Wand Brain Cloud Service
+- [hardware/README.md](hardware/README.md)
+- [hardware/wand/current_led_wand/README.md](hardware/wand/current_led_wand/README.md)
+- [hardware/wand/legacy_esp32/README.md](hardware/wand/legacy_esp32/README.md)
+- [hardware/camera/README.md](hardware/camera/README.md)
 
-The canonical cloud source lives under [cloud/](cloud/).
+### FPGA
 
-- `cloud/main.py` is the repo-level FastAPI entrypoint and glue layer.
-- `cloud/backend/versions/brain_v2_scoring/src/brain/` contains the live
-  runtime for UDP ingest, rendering, and scoring.
-- `cloud/database/` contains SQLAlchemy models and DB configuration.
-- `cloud/frontend/index.html` is the live console UI.
-- `cloud/node_control.py` stores revisioned control and ack state for each node.
+- [FPGA/README.md](FPGA/README.md)
+- [FPGA/runtime/pynq_wand_brain_demo.py](FPGA/runtime/pynq_wand_brain_demo.py)
+- [FPGA/runtime/pynq_udp_bridge.py](FPGA/runtime/pynq_udp_bridge.py)
+- [FPGA/designs/README.md](FPGA/designs/README.md)
 
-Important design choices:
+### Software
 
-- Live stroke state stays in memory.
-- Finalized attempts are persisted.
-- Scoring happens on finalized attempts, not every frame.
-- The frontend uses HTTP polling rather than WebSockets.
-
-### 3. EC2 Deployment Shape
-
-On EC2, the app is deployed from a runtime copy under `cloud/alt_live_console`.
-That directory is deployment state, not the canonical source tree to edit for
-GitHub.
-
-The canonical source to commit is the repo version under [cloud/](cloud/).
-
-## Repository Layout
-
-```text
-cloud/       Wand Brain backend, database layer, frontend, start script
-docs/        Project notes and integration docs
-protocol/    Protocol specifications, including wb-point-v1 UDP
-tools/       Test and observable demo utilities
-wand/        PYNQ / FPGA-side code and helpers
-```
-
-Helpful directory indexes:
-
-- [cloud/README.md](cloud/README.md)
-- [docs/README.md](docs/README.md)
-- [tools/README.md](tools/README.md)
-- [wand/README.md](wand/README.md)
+- [software/README.md](software/README.md)
+- [software/cloud/main.py](software/cloud/main.py)
+- [software/cloud/frontend/index.html](software/cloud/frontend/index.html)
+- [software/protocol/protocol/pynq-udp-brian-v1.md](software/protocol/protocol/pynq-udp-brian-v1.md)
+- [software/tools/README.md](software/tools/README.md)
 
 ## Local Development
 
 ### Cloud App
 
-From the repo root:
-
 ```bash
-cd cloud
+cd software/cloud
 bash start_script.sh --install-deps
 ```
 
@@ -102,45 +75,32 @@ http://127.0.0.1:8000/
 
 ### PYNQ Sender
 
+The board-side sender lives in:
+
+- [FPGA/runtime/pynq_wand_brain_demo.py](FPGA/runtime/pynq_wand_brain_demo.py)
+
 The main demo defaults to the current EC2 public IP but can also be overridden
-with the `BRAIN_HOST` environment variable in
-[wand/fpga/pynq_wand_brain_demo.py](wand/fpga/pynq_wand_brain_demo.py).
+with the `BRAIN_HOST` environment variable.
 
 Per-board identity still matters:
 
 - `DEVICE_NUMBER`
 - `WAND_ID`
 
-## Data And Runtime Files
+## Runtime Data
 
 Runtime-generated files are intentionally not the source of truth for GitHub:
 
-- `cloud/data/fpgawand.sqlite3`
-- `cloud/data/node_control_state.json`
-- `cloud/data/outputs/*.png`
-- EC2 deployment-only backups under `cloud/alt_live_console`
+- `software/cloud/data/fpgawand.sqlite3`
+- `software/cloud/data/node_control_state.json`
+- `software/cloud/data/outputs/*.png`
+- EC2 deployment-only backups such as `cloud/alt_live_console`
 
-The authoritative templates live in:
+The authoritative template source images live in:
 
-- [cloud/backend/versions/brain_v2_scoring/data/templates](cloud/backend/versions/brain_v2_scoring/data/templates)
-
-## Protocol Reference
-
-The point-stream protocol is documented here:
-
-- [protocol/protocol/pynq-udp-brian-v1.md](protocol/protocol/pynq-udp-brian-v1.md)
-
-## Current Features
-
-- Live UDP point ingest on port `41000`
-- HTTP API and dashboard on port `8000`
-- Template selection and scoring
-- Per-template leaderboards and champion naming
-- HTTP node control with ack tracking
-- Stroke timing
-- Multi-wand support
+- [software/cloud/backend/versions/brain_v2_scoring/data/templates](software/cloud/backend/versions/brain_v2_scoring/data/templates)
 
 ## Notes For Committers
 
-When preparing GitHub commits, prefer the canonical repo files and avoid
-committing runtime-only data or EC2 deployment artifacts.
+Commit the canonical source under `hardware/`, `FPGA/`, `software/`, and
+`docs/`. Avoid committing runtime-only data copied back from local runs or EC2.

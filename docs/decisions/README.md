@@ -7,4 +7,4 @@ At the moment, the key decisions are documented more informally in:
 
 - [../architecture/overview.md](../architecture/overview.md)
 - [../http_node_control.md](../http_node_control.md)
-- [../../protocol/README.md](../../protocol/README.md)
+- [../../software/protocol/README.md](../../software/protocol/README.md)

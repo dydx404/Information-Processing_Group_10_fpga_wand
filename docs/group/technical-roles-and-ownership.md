@@ -81,7 +81,7 @@ This track does **not** perform shape recognition or semantic interpretation.
 
 ### Data Outputs (to FPGA Node)
 
-All outputs must conform to the documented protocol in `protocol/`.
+All outputs must conform to the documented protocol in `software/protocol/`.
 
 - **2D_POSITION**
 
@@ -256,7 +256,7 @@ Multiple FPGA nodes can:
 
 ## Cross-Track Integration Rules
 
-- All interfaces **must be documented** in `protocol/`  
+- All interfaces **must be documented** in `software/protocol/`  
 - No track may change an interface unilaterally  
 - End-to-end demos take priority over internal optimisation  
 - Software baselines precede FPGA acceleration  

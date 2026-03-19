@@ -8,7 +8,7 @@ system.
 Start the cloud app:
 
 ```bash
-cd cloud
+cd software/cloud
 bash start_script.sh --install-deps
 ```
 
@@ -23,7 +23,7 @@ Confirm:
 Use the lightweight connection script:
 
 ```bash
-python3 tools/wb_connection_check.py --host 127.0.0.1
+python3 software/tools/wb_connection_check.py --host 127.0.0.1
 ```
 
 Expected outcome:
@@ -37,7 +37,7 @@ Expected outcome:
 Use the full-system smoke test:
 
 ```bash
-python3 tools/full_system_smoke_test.py --host 127.0.0.1 --rates 25,50,100
+python3 software/tools/full_system_smoke_test.py --host 127.0.0.1 --rates 25,50,100
 ```
 
 Expected outcome:
