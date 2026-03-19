@@ -32,7 +32,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 device_number = 1
 wand_id = 1
-stroke_id = 42          # MVP meaning: attempt_id
+stroke_id = 42          # source-side stroke identifier
 packet_number = 0
 
 # ------------------------------------------------------------

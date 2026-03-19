@@ -1,181 +1,146 @@
-# FPGA-Wand  
-**Distributed Point-Tracking and Shape Recognition System**  
-*Information Processing — Group 10*
+# FPGA-Wand
 
----
+Distributed FPGA-to-cloud wand tracking, drawing, and scoring system built for
+Information Processing Group 10.
 
-## Overview
+## What The System Does
 
-FPGA-Wand is a **distributed, edge-to-cloud interactive system** for real-time motion tracking and shape recognition.
+The live system turns a bright wand tip into a scored drawing:
 
-Each *wand* captures motion using infrared point tracking and inertial sensing, transmits time-aligned data to an FPGA-based edge node, and reconstructs a 2D trajectory in real time. The reconstructed path is then **classified and scored** against predefined reference shapes, with immediate visual feedback.
+1. A PYNQ board captures frames from a camera.
+2. The FPGA design computes centroid statistics for bright pixels.
+3. The PYNQ PS software filters those results and emits one UDP packet per valid
+   point.
+4. The EC2 Wand Brain service reconstructs each stroke in memory, rasterizes it
+   into a drawing, scores it against a selected template, and stores finalized
+   attempts in a database.
+5. A browser-based live console polls the service for live status, controls,
+   recent attempts, and leaderboards.
 
-Rather than treating “gesture recognition” as a black box, the project deliberately separates:
+The system deliberately separates the fast data path from the flexible control
+path:
 
-- sensing  
-- reconstruction  
-- classification  
-- coordination  
+- UDP is the low-latency point-stream data plane.
+- HTTP is the control and dashboard plane.
 
-Each stage has a **clearly defined responsibility and interface**, prioritising system-level correctness, determinism, and debuggability over opaque optimisation.
+## Current Architecture
 
----
+### 1. PYNQ Node
 
-## Key Design Principles
+The node-side logic lives primarily under [wand/](wand/).
 
-- **Clear layer separation** — no hidden cross-dependencies  
-- **Explicit protocols** — all inter-module communication is documented  
-- **Deterministic edge processing** — low latency, predictable behaviour  
-- **Extensible architecture** — new shapes, nodes, or behaviours can be added without refactoring the core  
+- PL accelerates centroid-style pixel reduction.
+- PS handles camera capture, preprocessing, DMA, MMIO reads, validity checks,
+  local sketching, and networking.
+- The PS sender packages points using the `wb-point-v1` binary UDP protocol and
+  also polls HTTP node-control endpoints from the server.
 
----
+Key files:
 
-## System Architecture
+- [wand/fpga/pynq_wand_brain_demo.py](wand/fpga/pynq_wand_brain_demo.py)
+- [wand/fpga/pynq_udp_bridge.py](wand/fpga/pynq_udp_bridge.py)
 
-The system is organised as a four-layer architecture.
+### 2. Wand Brain Cloud Service
 
-### 1. ESP32 Wand — Sensing Layer
+The canonical cloud source lives under [cloud/](cloud/).
 
-Responsibilities:
-- Infrared point detection (camera-based)
-- Inertial sensing using an IMU
-- Basic motion segmentation and filtering
-- Timestamping and packetisation
-- UART transmission to the FPGA node
+- `cloud/main.py` is the repo-level FastAPI entrypoint and glue layer.
+- `cloud/backend/versions/brain_v2_scoring/src/brain/` contains the live
+  runtime for UDP ingest, rendering, and scoring.
+- `cloud/database/` contains SQLAlchemy models and DB configuration.
+- `cloud/frontend/index.html` is the live console UI.
+- `cloud/node_control.py` stores revisioned control and ack state for each node.
 
-This layer **only acquires and conditions data**.  
-It performs **no interpretation or classification**.
+Important design choices:
 
----
+- Live stroke state stays in memory.
+- Finalized attempts are persisted.
+- Scoring happens on finalized attempts, not every frame.
+- The frontend uses HTTP polling rather than WebSockets.
 
-### 2. FPGA Node — Edge Intelligence Layer
+### 3. EC2 Deployment Shape
 
-Runs on a **PYNQ-Z1 FPGA SoC**.
+On EC2, the app is deployed from a runtime copy under `cloud/alt_live_console`.
+That directory is deployment state, not the canonical source tree to edit for
+GitHub.
 
-Responsibilities:
-- Receiving sensor packets from the ESP32
-- Time alignment and buffering
-- 2D trajectory reconstruction
-- Shape normalisation and comparison
-- Scoring against predefined reference shapes
-- Real-time HDMI visual output
+The canonical source to commit is the repo version under [cloud/](cloud/).
 
-Processing is designed to be **deterministic and low-latency**, with FPGA fabric used where acceleration is beneficial and ARM cores handling control logic.
-
-This layer is the **authoritative decision-making core** of the system.
-
----
-
-### 3. Cloud Backend — Coordination Layer (Optional)
-
-Responsibilities:
-- Session and node management
-- Multi-wand coordination (e.g. competition or collaboration)
-- Event handling and configuration distribution
-- Optional game logic or interaction rules
-
-The system remains fully functional **without the cloud**.  
-Cloud services are additive, not required.
-
----
-
-### 4. Database — Persistence Layer
-
-Responsibilities:
-- Logging trajectories, scores, and events
-- Supporting replay and offline analysis
-- Debugging and evaluation
-
-This layer exists to support development, testing, and demonstrations, not real-time control.
-
----
-
-## Repository Structure
+## Repository Layout
 
 ```text
-wand/        ESP32 firmware, FPGA designs, and node-side software
-cloud/       Backend server, database schema, and deployment scripts
-protocol/    Message formats and communication specifications
-docs/        Architecture diagrams, reports, and testing notes
-tools/       Development, debugging, and test utilities
-Repository Conventions
+cloud/       Wand Brain backend, database layer, frontend, start script
+docs/        Project notes and integration docs
+protocol/    Protocol specifications, including wb-point-v1 UDP
+tools/       Test and observable demo utilities
+wand/        PYNQ / FPGA-side code and helpers
+```
 
-protocol/ is the single source of truth for all interfaces
+Helpful directory indexes:
 
-Each directory corresponds to a clearly owned subsystem
+- [cloud/README.md](cloud/README.md)
+- [docs/README.md](docs/README.md)
+- [tools/README.md](tools/README.md)
+- [wand/README.md](wand/README.md)
 
-Cross-module changes must be coordinated
+## Local Development
 
-Interfaces may not be changed unilaterally
+### Cloud App
 
-Development Workflow
+From the repo root:
 
-All development occurs on feature branches
+```bash
+cd cloud
+bash start_script.sh --install-deps
+```
 
-main is kept stable and demo-ready
+Then open:
 
-Changes are merged via Pull Requests
+```text
+http://127.0.0.1:8000/
+```
 
-Interface changes require cross-track agreement
+### PYNQ Sender
 
-End-to-end functionality takes priority over micro-optimisation
+The main demo defaults to the current EC2 public IP but can also be overridden
+with the `BRAIN_HOST` environment variable in
+[wand/fpga/pynq_wand_brain_demo.py](wand/fpga/pynq_wand_brain_demo.py).
 
-Contribution rules are defined in CONTRIBUTING.md.
+Per-board identity still matters:
 
-Requirements
-Hardware
+- `DEVICE_NUMBER`
+- `WAND_ID`
 
-ESP32-based development board
+## Data And Runtime Files
 
-FPGA SoC board (e.g. PYNQ-Z1)
+Runtime-generated files are intentionally not the source of truth for GitHub:
 
-Infrared LED and camera module
+- `cloud/data/fpgawand.sqlite3`
+- `cloud/data/node_control_state.json`
+- `cloud/data/outputs/*.png`
+- EC2 deployment-only backups under `cloud/alt_live_console`
 
-Software
+The authoritative templates live in:
 
-Python 3.10 or newer
+- [cloud/backend/versions/brain_v2_scoring/data/templates](cloud/backend/versions/brain_v2_scoring/data/templates)
 
-Vivado (for FPGA synthesis)
+## Protocol Reference
 
-PYNQ environment (Jupyter-based control and drivers)
+The point-stream protocol is documented here:
 
-Optional Cloud
+- [protocol/protocol/pynq-udp-brian-v1.md](protocol/protocol/pynq-udp-brian-v1.md)
 
-AWS account
+## Current Features
 
-EC2 instance for backend deployment
+- Live UDP point ingest on port `41000`
+- HTTP API and dashboard on port `8000`
+- Template selection and scoring
+- Per-template leaderboards and champion naming
+- HTTP node control with ack tracking
+- Stroke timing
+- Multi-wand support
 
-Project Goals
-Minimum Viable Demonstration
+## Notes For Committers
 
-The minimum successful system demonstrates:
-
-A wand producing segmented, timestamped motion data
-
-An FPGA node reconstructing a 2D trajectory
-
-Local classification and scoring against a reference shape
-
-Real-time HDMI visual feedback
-
-No cloud dependency is required for the MVP.
-
-Extended Functionality
-
-Optional extensions include:
-
-Multi-node competitive or collaborative modes
-
-Cloud-coordinated sessions
-
-Web-based visualisation and replay
-
-Expanded shape libraries and scoring rules
-
-Status
-
-This project is under active development as part of the Information Processing coursework.
-
-Milestones, integration status, and design decisions are documented in the docs/ directory.
-
-FPGA-Wand emphasises clarity, determinism, and system-level thinking — treating hardware, software, and communication as one coherent machine rather than isolated components.
+When preparing GitHub commits, prefer the canonical repo files and avoid
+committing runtime-only data or EC2 deployment artifacts.

@@ -14,25 +14,29 @@ This document explains exactly how to use Wand-Brain V2 end-to-end, with concret
 
 ## 0. What Wand-Brain V2 Does
 
-Wand-Brain V2 is the runtime service that:
+Wand-Brain V2 is the core runtime that:
 1. Receives UDP packets from PYNQ (`wb-point-v1`, 24 bytes).
 2. Parses packets into normalized points.
-3. Buffers one drawing attempt (button-hold) per `(device_number, wand_id, stroke_id)`.
+3. Buffers one live drawing attempt per `(device_number, wand_id)` and tracks the source-side `stroke_id`.
 4. Produces a live PNG while drawing is active (`/api/v1/wand/{wand_id}/live.png`).
 5. Finalizes the attempt when `STROKE_END` arrives and writes final PNG.
 6. Scores final drawing against reference templates (`data/templates/*.png`).
-7. Exposes read-only HTTP APIs for UI and data ingestion.
+7. Is wrapped by the repo-level cloud app for persistence, leaderboards, node control, and the frontend.
 
 Important model:
 - One attempt = one full press-hold-release.
-- `stroke_id` in UDP is the attempt id.
+- UDP `stroke_id` is the source-side stroke identifier.
+- Public API `attempt_id` is the backend-owned finalized-attempt identifier.
 
 ---
 
 ## 1. Runtime Paths, Ports, and Files
 
-Base folder:
+Base runtime folder:
 - `cloud/backend/versions/brain_v2_scoring`
+
+Canonical repo-level cloud entrypoint:
+- `cloud/main.py`
 
 Ports:
 - UDP input: `41000` (hardcoded in server)
@@ -53,6 +57,10 @@ Operational scripts:
 - Start v2 service: `tools/start_brain_v2_server.sh`
 - Generate templates: `tools/generate_templates.py`
 - Overlay live demo: `tools/run_observable_v2_overlay_demo.sh`
+
+Practical note:
+- For the current full app, operators usually launch `cloud/start_script.sh` from
+  the repo root rather than running this package directly.
 
 TX simulation scripts (repo root `tools/`):
 - Long noisy stroke: `tools/wb_tx_long_noisy_stroke.py`
@@ -103,7 +111,7 @@ flowchart LR
 stateDiagram-v2
   [*] --> Idle
 
-  Idle --> Active: first PEN_DOWN packet\n(stroke_id = attempt_id)
+  Idle --> Active: first valid point packet\n(new internal attempt opens)
   Active --> Active: more PEN_DOWN packets\nappend points + live render
   Active --> Finalizing: STROKE_END packet
   Finalizing --> Idle: final PNG saved\nFinalResult stored
@@ -111,7 +119,7 @@ stateDiagram-v2
   note right of Active
     live status:
     active=true
-    current_attempt_id=stroke_id
+    current_attempt_id=internal attempt id
   end note
 
   note right of Idle
@@ -170,7 +178,7 @@ Field order:
 4. `uint16 device_number`
 5. `uint16 wand_id`
 6. `uint32 packet_number`
-7. `uint32 stroke_id` (attempt id)
+7. `uint32 stroke_id` (source-side stroke identifier)
 8. `int16 x_q` (0..32767)
 9. `int16 y_q` (0..32767)
 10. `uint32 timestamp_ms`
@@ -238,7 +246,8 @@ sock.sendto(payload, addr)
 
 ## 4. API Contract (For Web-Server + DB Owners)
 
-All APIs are read-only (`GET`, image endpoints also accept `HEAD`).
+Most view APIs are `GET`-based, but the full cloud app also exposes mutating
+control and leaderboard endpoints under `/api/v3/*`.
 
 ### 4.1 Health and Wand Status
 
@@ -429,9 +438,12 @@ V2 server includes permissive CORS middleware. If frontend still cannot fetch JS
 
 ## 7. Database Team Integration Guide (Step-by-Step)
 
-Wand-Brain currently does not write directly to DB. Recommended ingestion pattern is pull-based.
+In the current repo-level cloud app, finalized attempts are persisted directly on
+finalize. External pull-based ingestion is optional rather than required.
 
 ### 7.1 Poll and Persist Plan
+
+If you still want a pull-based ingester, the pattern is:
 
 Per wand:
 1. Poll `/api/v1/attempt/latest?wand_id=<id>` every 500-1000 ms.
@@ -446,7 +458,8 @@ Use composite key in DB:
 - `(device_number, wand_id, attempt_id)`
 
 Reason:
-- `attempt_id` alone may collide across devices/wands if transmitters reuse stroke ids.
+- backend attempt ids are internal but device/wand identity is still useful for
+  indexing and traceability
 
 ### 7.3 Suggested SQL Schema
 
@@ -507,23 +520,16 @@ for wand_id in active_wands:
 ### 8.1 First-Time Start
 
 ```bash
-cd ~/fpga_wand/Information-Processing_Group_10_fpga_wand
-cloud/backend/versions/brain_v2_scoring/tools/start_brain_v2_server.sh \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --install-deps \
-  --generate-templates
+cd ~/fpga_wand/Information-Processing_Group_10_fpga_wand/cloud
+bash start_script.sh --host 0.0.0.0 --port 8000 --install-deps
 ```
 
 ### 8.2 Restart After Code Update
 
 ```bash
-pkill -f "uvicorn brain.api.server:app" || true
-cd ~/fpga_wand/Information-Processing_Group_10_fpga_wand
-cloud/backend/versions/brain_v2_scoring/tools/start_brain_v2_server.sh \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --generate-templates
+pkill -f "uvicorn main:app" || true
+cd ~/fpga_wand/Information-Processing_Group_10_fpga_wand/cloud
+bash start_script.sh --host 0.0.0.0 --port 8000
 ```
 
 ### 8.3 Health Verification
@@ -572,8 +578,10 @@ curl -s "http://<EC2_IP>:8000/api/v2/score/latest?wand_id=1&template_id=heart_v1
 - Packet drops reduce point density and can lower score.
 
 2. Attempt identity:
-- Internal buffering uses `(device, wand, stroke_id)`.
-- Some API lookup paths still use `attempt_id` directly; keep stroke ids unique enough in practice.
+- UDP `stroke_id` is preserved as `source_stroke_id`.
+- Persisted/public `attempt_id` is backend-owned.
+- Keep source stroke IDs stable for one stroke, but do not assume they are the
+  final database key.
 
 3. Fixed canvas mode:
 - Live/final rendering uses fixed coordinate mapping (stable viewport).
@@ -630,16 +638,16 @@ Common errors and meaning:
 
 ### Database Owner Checklist
 
-- [ ] Poll `/api/v1/attempt/latest` per wand.
-- [ ] On attempt change, persist metadata + score JSON + image.
-- [ ] Use composite PK `(device_number, wand_id, attempt_id)`.
+- [ ] If using the repo-level cloud app, verify finalize-time DB persistence works.
+- [ ] If building a separate ingester, poll `/api/v1/attempt/latest` per wand.
+- [ ] Use `(device_number, wand_id, attempt_id)` or another stable internal key.
 - [ ] Keep immutable per-attempt records.
 
 ### Wand-Brain Operator Checklist
 
-- [ ] Start correct version (`brain_v2_scoring`, not MVP folder).
-- [ ] Run with `--generate-templates`.
-- [ ] Confirm `/api/v2/templates` returns expected set.
+- [ ] Start the repo-level cloud app, not the old MVP backend folder.
+- [ ] Confirm `/api/v1/health` returns OK.
+- [ ] Confirm `/api/v2/templates` returns the expected set.
 - [ ] Confirm security group allows UDP 41000 and TCP 8000.
 
 ---
@@ -705,4 +713,3 @@ flowchart TB
 
 This guide is written to be operationally explicit and role-separable.
 If all three role owners follow their checklist, integration should be deterministic and reproducible.
-

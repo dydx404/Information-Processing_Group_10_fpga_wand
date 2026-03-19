@@ -147,7 +147,8 @@ def wait_for_attempt(
     host: str,
     api_port: int,
     wand_id: int,
-    expected_stroke_id: int,
+    expected_source_stroke_id: int,
+    min_start_ms: int,
     timeout_s: float,
 ) -> Dict:
     deadline = time.time() + timeout_s
@@ -156,14 +157,15 @@ def wait_for_attempt(
     while time.time() < deadline:
         try:
             data = get_json(url, timeout_s=3.0)
-            got_id = int(data.get("attempt_id", -1))
-            if got_id >= expected_stroke_id:
+            got_source = int(data.get("source_stroke_id", -1))
+            got_start_ms = int(data.get("start_ms", -1))
+            if got_source == expected_source_stroke_id and got_start_ms >= min_start_ms:
                 return data
         except Exception as exc:  # noqa: BLE001
             last_error = str(exc)
         time.sleep(0.2)
     raise TimeoutError(
-        f"timed out waiting for attempt {expected_stroke_id} on wand {wand_id}; last_error={last_error}"
+        f"timed out waiting for source_stroke_id {expected_source_stroke_id} on wand {wand_id}; last_error={last_error}"
     )
 
 
@@ -203,6 +205,7 @@ def main() -> int:
     packet_no = args.packet_start
     expectations: List[AttemptExpectation] = []
     stroke_id = args.stroke_start
+    sent_after_ms = now_ms_u32()
 
     for i, rate in enumerate(rates, start=1):
         expected_points = max(2, int(round(rate * args.duration)))
@@ -233,14 +236,20 @@ def main() -> int:
     print("[3/5] Verify latest attempt via API")
     final_exp = expectations[-1]
     latest = wait_for_attempt(
-        args.host, args.api_port, args.wand, final_exp.stroke_id, timeout_s=args.attempt_timeout
+        args.host,
+        args.api_port,
+        args.wand,
+        final_exp.stroke_id,
+        sent_after_ms,
+        timeout_s=args.attempt_timeout,
     )
     got_attempt = int(latest["attempt_id"])
+    got_source = int(latest["source_stroke_id"])
     got_points = int(latest["num_points"])
     got_wand = int(latest["wand_id"])
     got_device = int(latest["device_number"])
-    if got_attempt != final_exp.stroke_id:
-        print(f"FAIL: latest attempt_id={got_attempt}, expected {final_exp.stroke_id}")
+    if got_source != final_exp.stroke_id:
+        print(f"FAIL: latest source_stroke_id={got_source}, expected {final_exp.stroke_id}")
         return 2
     receive_ratio = got_points / final_exp.expected_points if final_exp.expected_points else 0.0
     if receive_ratio < args.min_receive_ratio:
@@ -256,7 +265,8 @@ def main() -> int:
         )
         return 4
     print(
-        f"      latest attempt OK: id={got_attempt} points={got_points}/{final_exp.expected_points} "
+        f"      latest attempt OK: attempt_id={got_attempt} source_stroke_id={got_source} "
+        f"points={got_points}/{final_exp.expected_points} "
         f"(receive_ratio={receive_ratio:.3f})"
     )
 

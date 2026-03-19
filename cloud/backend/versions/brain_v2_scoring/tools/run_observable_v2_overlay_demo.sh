@@ -8,9 +8,9 @@ set -euo pipefail
 #
 # Backend API must already be running (typically on EC2).
 
-API_HOST="${API_HOST:-16.16.202.231}"
+API_HOST="${API_HOST:-13.51.156.87}"
 API_PORT="${API_PORT:-8000}"
-UDP_HOST="${UDP_HOST:-16.16.202.231}"
+UDP_HOST="${UDP_HOST:-13.51.156.87}"
 UDP_PORT="${UDP_PORT:-41000}"
 
 WAND_ID="${WAND_ID:-1}"
@@ -99,8 +99,8 @@ fi
 
 if ! curl -fsS "http://${API_HOST}:${API_PORT}/api/v2/templates" >/dev/null; then
   echo "This server does not expose /api/v2/templates." >&2
-  echo "Likely running MVP backend, not brain_v2_scoring." >&2
-  echo "Start v2 backend on EC2 from cloud/backend/versions/brain_v2_scoring and retry." >&2
+  echo "Likely running an older or incomplete cloud deployment." >&2
+  echo "Start the repo-level cloud app from cloud/start_script.sh and retry." >&2
   exit 1
 fi
 

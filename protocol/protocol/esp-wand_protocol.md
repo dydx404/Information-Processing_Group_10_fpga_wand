@@ -1,4 +1,4 @@
-# ESP32 Wand Control (MVP v1) — User Story + Control Logic
+# ESP32 Wand Control (MVP v1) - User Story + Control Logic
 **Scope:** ESP32 handles **button → IR LED + haptic** and sends **START/END events** to PYNQ.  
 **IMU:** Ignored for MVP (single-go configuration, no runtime use).  
 **Segmentation model:** One **attempt** per button-hold (press → release). PYNQ collects `(x,y,t)` only during an active attempt.

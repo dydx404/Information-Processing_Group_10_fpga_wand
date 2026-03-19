@@ -4,9 +4,9 @@ set -euo pipefail
 # Opens live preview page and runs one long noisy single-stroke TX test.
 # Backend (Wand-Brain API) must already be running.
 
-API_HOST="${API_HOST:-16.16.202.231}"
+API_HOST="${API_HOST:-13.51.156.87}"
 API_PORT="${API_PORT:-8000}"
-UDP_HOST="${UDP_HOST:-16.16.202.231}"
+UDP_HOST="${UDP_HOST:-13.51.156.87}"
 UDP_PORT="${UDP_PORT:-41000}"
 WAND_ID="${WAND_ID:-1}"
 DEVICE_ID="${DEVICE_ID:-1}"
@@ -76,7 +76,7 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-PREVIEW_DIR="${REPO_ROOT}/cloud/backend/brain/tools"
+PREVIEW_DIR="${REPO_ROOT}/cloud/backend/versions/brain_v2_scoring/tools"
 TX_SCRIPT="${REPO_ROOT}/tools/wb_tx_long_noisy_stroke.py"
 
 if ! curl -fsS "http://${API_HOST}:${API_PORT}/api/v1/health" >/dev/null; then

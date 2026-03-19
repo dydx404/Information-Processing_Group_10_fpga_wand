@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PORT="${1:-8010}"
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../cloud/backend/brain/tools" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../cloud/backend/versions/brain_v2_scoring/tools" && pwd)"
 URL="http://127.0.0.1:${PORT}/preview.html"
 
 cd "${ROOT_DIR}"

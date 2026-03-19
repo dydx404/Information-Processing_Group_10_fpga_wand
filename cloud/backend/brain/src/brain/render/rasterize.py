@@ -43,6 +43,14 @@ def rasterize(points: List[Point], size: int = 256, stroke: int = 3) -> Image.Im
     xy = _normalize_xy(points, size=size, margin=10)
     draw = ImageDraw.Draw(img)
 
+    # Filter out consecutive duplicate points
+    if xy:
+        filtered_xy = [xy[0]]
+        for p in xy[1:]:
+            if p != filtered_xy[-1]:
+                filtered_xy.append(p)
+        xy = filtered_xy
+
     if len(xy) == 1:
         x, y = xy[0]
         r = max(1, stroke)

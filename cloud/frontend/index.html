@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wand Brain Live Console</title>
+    <style>
+      :root {
+        --bg: #f6f1e6;
+        --panel: #fffaf1;
+        --ink: #181512;
+        --muted: #6d655c;
+        --line: #d8ccb8;
+        --accent: #b6432a;
+        --accent-soft: #f3d6c7;
+        --ok: #1d7c44;
+        --warn: #9b6100;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        background:
+          radial-gradient(circle at top left, #fff7e9 0, transparent 32%),
+          linear-gradient(135deg, #f8f3e8, #f0e7d7 60%, #e9dfce);
+        color: var(--ink);
+      }
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .hero {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        letter-spacing: 0.02em;
+      }
+      .hero p {
+        margin: 0;
+        color: var(--muted);
+        max-width: 72ch;
+      }
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        font-size: 0.95rem;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--warn);
+      }
+      .dot.ok { background: var(--ok); }
+      .grid {
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr) 360px;
+        gap: 18px;
+      }
+      .panel {
+        background: rgba(255, 250, 241, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 18px 40px rgba(64, 43, 15, 0.08);
+      }
+      .panel h2 {
+        margin: 0 0 10px;
+        font-size: 1.1rem;
+      }
+      .controls {
+        display: grid;
+        gap: 12px;
+      }
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+      select, button, input[type="number"], input[type="text"] {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font: inherit;
+        background: #fffdf8;
+        color: var(--ink);
+      }
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        margin: 0;
+      }
+      button {
+        cursor: pointer;
+        background: linear-gradient(135deg, #fdf4e3, var(--accent-soft));
+      }
+      button:hover { border-color: var(--accent); }
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+      .section-label {
+        padding-top: 4px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .control-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--line), transparent);
+        margin: 2px 0;
+      }
+      .device-note {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.6);
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+      .toggle-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fffdf8;
+        color: var(--ink);
+        font-size: 0.9rem;
+      }
+      .toggle input {
+        width: auto;
+        margin: 0;
+      }
+      .button-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .summary-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .summary-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: rgba(255,255,255,0.55);
+      }
+      .summary-card strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .canvas-wrap {
+        display: grid;
+        gap: 14px;
+      }
+      .canvas-frame {
+        position: relative;
+        width: min(100%, 640px);
+        aspect-ratio: 1 / 1;
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid rgba(30, 20, 12, 0.18);
+        background:
+          linear-gradient(180deg, rgba(24,21,18,0.96), rgba(41,31,17,0.96)),
+          repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,0.03),
+            rgba(255,255,255,0.03) 1px,
+            transparent 1px,
+            transparent 24px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255,255,255,0.03),
+            rgba(255,255,255,0.03) 1px,
+            transparent 1px,
+            transparent 24px
+          );
+      }
+      .canvas-frame img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        image-rendering: pixelated;
+      }
+      #templateBg { opacity: 0.45; }
+      #liveDraw { opacity: 0.97; mix-blend-mode: screen; }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 10px;
+      }
+      .stat {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255,255,255,0.55);
+        border: 1px solid var(--line);
+      }
+      .stat small {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .score-box {
+        padding: 14px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #fff1e3, #f3d6c7);
+        border: 1px solid rgba(182,67,42,0.18);
+      }
+      .score-box strong {
+        display: block;
+        font-size: 2rem;
+      }
+      .claim-box {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(29,124,68,0.18);
+        background: linear-gradient(135deg, #eef8f1, #f8fcf8);
+      }
+      .claim-box[hidden] {
+        display: none;
+      }
+      .leaderboard-box {
+        margin-top: 18px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      th, td {
+        text-align: left;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th { color: var(--muted); font-weight: 600; }
+      .mono { font-family: "SFMono-Regular", Consolas, monospace; }
+      .tiny { font-size: 0.84rem; color: var(--muted); }
+      a { color: var(--accent); }
+      @media (max-width: 1080px) {
+        .grid { grid-template-columns: 1fr; }
+        .canvas-frame { width: 100%; }
+      }
+      @media (max-width: 720px) {
+        .toggle-grid,
+        .button-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="hero">
+        <h1>Wand Brain Live Console</h1>
+        <p>
+          This page watches the live UDP ingest state, overlays the selected reference template,
+          shows the current stroke as it arrives, and keeps a recent finalized-attempt log from the database.
+        </p>
+        <div class="badge-row">
+          <div class="badge"><span id="healthDot" class="dot"></span><span id="healthText">checking API…</span></div>
+          <div class="badge"><span id="dbDot" class="dot"></span><span id="dbText">checking database…</span></div>
+          <div class="badge"><span>Selected wand: <strong id="selectedWandLabel">1</strong></span></div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <aside class="panel">
+          <h2>Controls</h2>
+          <div class="controls">
+            <label>
+              Wand
+              <select id="wandSelect"></select>
+            </label>
+            <label>
+              Target Template
+              <select id="templateSelect"></select>
+            </label>
+            <button id="applyTemplateButton" type="button">Use This Template</button>
+            <button id="refreshButton" type="button">Refresh Now</button>
+            <div class="control-divider"></div>
+            <div class="section-label">Node Control</div>
+            <div class="device-note">
+              Device <strong id="deviceNumberValue" class="mono">-</strong> for wand
+              <strong id="selectedControlWandLabel">1</strong>. Use
+              <span class="mono">next_attempt</span> to queue processing changes safely.
+            </div>
+            <label>
+              Apply On
+              <select id="applyOnSelect">
+                <option value="immediate">immediate</option>
+                <option value="next_attempt">next_attempt</option>
+              </select>
+            </label>
+            <label>
+              Mode
+              <select id="controlModeSelect">
+                <option value="normal">normal</option>
+                <option value="precision">precision</option>
+                <option value="fast">fast</option>
+                <option value="noisy_room">noisy_room</option>
+              </select>
+            </label>
+            <div class="toggle-grid">
+              <label class="toggle"><input id="enabledCheckbox" type="checkbox" /> enabled</label>
+              <label class="toggle"><input id="armedCheckbox" type="checkbox" /> armed</label>
+              <label class="toggle"><input id="txEnabledCheckbox" type="checkbox" /> tx enabled</label>
+            </div>
+            <label>
+              Threshold
+              <input id="thresholdInput" type="number" min="0" max="255" step="1" />
+            </label>
+            <label>
+              Min Count
+              <input id="minCountInput" type="number" min="1" max="9999" step="1" />
+            </label>
+            <label>
+              Gap Timeout (ms)
+              <input id="gapTimeoutInput" type="number" min="100" max="10000" step="10" />
+            </label>
+            <label>
+              Max Jump
+              <input id="maxJumpInput" type="number" min="1" max="5000" step="1" />
+            </label>
+            <label>
+              Smoothing Alpha
+              <input id="smoothingAlphaInput" type="number" min="0" max="1" step="0.05" />
+            </label>
+            <div class="button-row">
+              <button id="saveControlButton" type="button">Save Control</button>
+              <button id="reloadControlButton" type="button">Load Server Values</button>
+            </div>
+            <div class="button-row">
+              <button id="pauseTxButton" type="button">Pause TX Now</button>
+              <button id="resumeTxButton" type="button">Resume TX Now</button>
+            </div>
+            <div class="button-row">
+              <button id="clearSketchButton" type="button">Clear Sketch</button>
+              <button id="recalibrateButton" type="button">Recalibrate</button>
+            </div>
+          </div>
+
+          <div class="summary-list">
+            <div class="summary-card">
+              <strong>Target Template</strong>
+              <div id="templateStatusText" class="tiny">no template locked yet</div>
+            </div>
+            <div class="summary-card">
+              <strong>Live Status</strong>
+              <div id="liveStatusText" class="tiny">waiting for wand data…</div>
+            </div>
+            <div class="summary-card">
+              <strong>Latest Attempt</strong>
+              <div id="latestAttemptText" class="tiny">no finalized attempt yet</div>
+            </div>
+            <div class="summary-card">
+              <strong>Active Wands</strong>
+              <div id="wandListText" class="tiny">loading…</div>
+            </div>
+            <div class="summary-card">
+              <strong>Node Control</strong>
+              <div id="nodeControlStatusText" class="tiny">loading node control…</div>
+            </div>
+            <div class="summary-card">
+              <strong>Node Ack</strong>
+              <div id="nodeAckText" class="tiny">waiting for node poll…</div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="panel canvas-wrap">
+          <div class="canvas-frame">
+            <img id="templateBg" alt="reference template" />
+            <img id="liveDraw" alt="live wand drawing" />
+          </div>
+          <div class="stats">
+            <div class="stat"><small>Mode</small><div id="modeValue">idle</div></div>
+            <div class="stat"><small>Attempt</small><div id="attemptValue">-</div></div>
+            <div class="stat"><small>Points</small><div id="pointsValue">0</div></div>
+            <div class="stat"><small>Stroke Timer</small><div id="timerValue">-</div></div>
+            <div class="stat"><small>Last Point</small><div id="lastPointValue">-</div></div>
+            <div class="stat"><small>Close Reason</small><div id="closeReasonValue">-</div></div>
+          </div>
+        </main>
+
+        <aside class="panel">
+          <h2>Score & Database</h2>
+          <div class="score-box">
+            <div class="tiny">Selected template comparison</div>
+            <strong id="scoreValue">-</strong>
+            <div id="scoreDetails" class="tiny">waiting for a finalized stroke</div>
+          </div>
+
+          <div id="claimPanel" class="claim-box" hidden>
+            <div class="tiny">Template champion</div>
+            <strong id="claimPromptText">New top score</strong>
+            <label style="margin-top: 10px;">
+              Player Name
+              <input id="playerNameInput" type="text" maxlength="32" placeholder="Enter player name" />
+            </label>
+            <button id="claimNameButton" type="button" style="margin-top: 10px;">Save Champion Name</button>
+            <div id="claimStatusText" class="tiny" style="margin-top: 8px;">This appears only when the latest attempt is the current top score for its template.</div>
+          </div>
+
+          <div class="leaderboard-box">
+            <h2 style="margin-top: 18px;">Template Champions</h2>
+            <div class="tiny" style="margin-bottom: 10px;">Each template keeps the current highest score at the top. New top scores can claim the champion slot.</div>
+            <div style="overflow:auto; max-height: 260px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Template</th>
+                    <th>Champion</th>
+                    <th>Score</th>
+                    <th>Wand</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <h2 style="margin-top: 18px;">Recent Attempts</h2>
+          <div class="tiny" style="margin-bottom: 10px;">Most recent finalized attempts persisted by Wand Brain.</div>
+          <div style="overflow:auto; max-height: 420px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>DB</th>
+                  <th>Attempt</th>
+                  <th>Wand</th>
+                  <th>Time</th>
+                  <th>Points</th>
+                  <th>Score</th>
+                  <th>Image</th>
+                </tr>
+              </thead>
+              <tbody id="dbRows"></tbody>
+            </table>
+          </div>
+        </aside>
+      </section>
+    </div>
+
+    <script>
+      const API = window.location.origin;
+      const healthDot = document.getElementById("healthDot");
+      const healthText = document.getElementById("healthText");
+      const dbDot = document.getElementById("dbDot");
+      const dbText = document.getElementById("dbText");
+      const wandSelect = document.getElementById("wandSelect");
+      const templateSelect = document.getElementById("templateSelect");
+      const applyTemplateButton = document.getElementById("applyTemplateButton");
+      const refreshButton = document.getElementById("refreshButton");
+      const templateStatusText = document.getElementById("templateStatusText");
+      const liveStatusText = document.getElementById("liveStatusText");
+      const latestAttemptText = document.getElementById("latestAttemptText");
+      const wandListText = document.getElementById("wandListText");
+      const deviceNumberValue = document.getElementById("deviceNumberValue");
+      const selectedControlWandLabel = document.getElementById("selectedControlWandLabel");
+      const applyOnSelect = document.getElementById("applyOnSelect");
+      const controlModeSelect = document.getElementById("controlModeSelect");
+      const enabledCheckbox = document.getElementById("enabledCheckbox");
+      const armedCheckbox = document.getElementById("armedCheckbox");
+      const txEnabledCheckbox = document.getElementById("txEnabledCheckbox");
+      const thresholdInput = document.getElementById("thresholdInput");
+      const minCountInput = document.getElementById("minCountInput");
+      const gapTimeoutInput = document.getElementById("gapTimeoutInput");
+      const maxJumpInput = document.getElementById("maxJumpInput");
+      const smoothingAlphaInput = document.getElementById("smoothingAlphaInput");
+      const saveControlButton = document.getElementById("saveControlButton");
+      const reloadControlButton = document.getElementById("reloadControlButton");
+      const pauseTxButton = document.getElementById("pauseTxButton");
+      const resumeTxButton = document.getElementById("resumeTxButton");
+      const clearSketchButton = document.getElementById("clearSketchButton");
+      const recalibrateButton = document.getElementById("recalibrateButton");
+      const nodeControlStatusText = document.getElementById("nodeControlStatusText");
+      const nodeAckText = document.getElementById("nodeAckText");
+      const selectedWandLabel = document.getElementById("selectedWandLabel");
+      const templateBg = document.getElementById("templateBg");
+      const liveDraw = document.getElementById("liveDraw");
+      const modeValue = document.getElementById("modeValue");
+      const attemptValue = document.getElementById("attemptValue");
+      const pointsValue = document.getElementById("pointsValue");
+      const timerValue = document.getElementById("timerValue");
+      const lastPointValue = document.getElementById("lastPointValue");
+      const closeReasonValue = document.getElementById("closeReasonValue");
+      const scoreValue = document.getElementById("scoreValue");
+      const scoreDetails = document.getElementById("scoreDetails");
+      const claimPanel = document.getElementById("claimPanel");
+      const claimPromptText = document.getElementById("claimPromptText");
+      const playerNameInput = document.getElementById("playerNameInput");
+      const claimNameButton = document.getElementById("claimNameButton");
+      const claimStatusText = document.getElementById("claimStatusText");
+      const leaderboardRows = document.getElementById("leaderboardRows");
+      const dbRows = document.getElementById("dbRows");
+
+      let selectedWand = 1;
+      let selectedDeviceNumber = 1;
+      let liveFrameAvailable = false;
+      let inflightLive = false;
+      let controlDraftDirty = false;
+      let latestAttempt = null;
+      let latestLeaderboards = [];
+      let latestWandStatus = null;
+      let latestWandStatusPerfMs = 0;
+
+      function q(path) {
+        return `${API}${path}`;
+      }
+
+      function templateStorageKey() {
+        return `wand-brain-target-template-${selectedWand}`;
+      }
+
+      function setTemplateBackground() {
+        const templateId = templateSelect.value || "heart_v1";
+        templateBg.src = q(`/api/v2/template/${templateId}/image.png?t=${Date.now()}`);
+      }
+
+      async function fetchJson(path, options = {}) {
+        const resp = await fetch(q(path), { cache: "no-store", ...options });
+        if (!resp.ok) {
+          throw new Error(`${resp.status} ${resp.statusText}`);
+        }
+        return resp.json();
+      }
+
+      function clampNumber(value, min, max, fallback) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return fallback;
+        return Math.min(max, Math.max(min, numeric));
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function formatDurationMs(value) {
+        const ms = Number(value);
+        if (!Number.isFinite(ms) || ms < 0) return "-";
+        return `${(ms / 1000).toFixed(2)}s`;
+      }
+
+      function renderTimerValue() {
+        if (!latestWandStatus) {
+          timerValue.textContent = "-";
+          return;
+        }
+
+        if (latestWandStatus.active && Number.isFinite(Number(latestWandStatus.current_duration_ms))) {
+          const baseMs = Number(latestWandStatus.current_duration_ms);
+          const elapsedSincePoll = Math.max(0, performance.now() - latestWandStatusPerfMs);
+          timerValue.textContent = formatDurationMs(baseMs + Math.min(elapsedSincePoll, 1200));
+          return;
+        }
+
+        if (Number.isFinite(Number(latestWandStatus.last_stroke_duration_ms))) {
+          timerValue.textContent = formatDurationMs(Number(latestWandStatus.last_stroke_duration_ms));
+          return;
+        }
+
+        timerValue.textContent = "-";
+      }
+
+      function updateSelectedControlLabels() {
+        selectedWandLabel.textContent = String(selectedWand);
+        selectedControlWandLabel.textContent = String(selectedWand);
+        deviceNumberValue.textContent = String(selectedDeviceNumber ?? "-");
+      }
+
+      function markControlDraftDirty() {
+        controlDraftDirty = true;
+        nodeControlStatusText.textContent = `Editing a local control draft for device ${selectedDeviceNumber}. Click “Save Control” to apply it.`;
+      }
+
+      function formatNodeControlText(control) {
+        if (!control) return "No control payload available.";
+        return [
+          `rev ${control.revision}`,
+          `mode ${control.mode}`,
+          control.enabled ? "enabled" : "disabled",
+          control.armed ? "armed" : "disarmed",
+          control.tx_enabled ? "tx on" : "tx off",
+          `apply ${control.apply_on}`,
+          `thr ${control.vision?.threshold ?? "-"}`,
+          `min ${control.vision?.min_count ?? "-"}`,
+        ].join(" | ");
+      }
+
+      function formatNodeAckText(ack) {
+        if (!ack) return "No node ack seen yet.";
+        const lastSeen = ack.last_seen_ms
+          ? new Date(ack.last_seen_ms).toLocaleTimeString()
+          : "never";
+        const pending = ack.pending_revision == null ? "none" : ack.pending_revision;
+        const errorText = ack.last_error ? ` | error ${ack.last_error}` : "";
+        return `applied ${ack.applied_revision ?? "-"} | pending ${pending} | ${ack.mode || "unknown"} | active ${ack.active_stroke ? "yes" : "no"} | tx ${ack.tx_active ? "yes" : "no"} | seen ${lastSeen}${errorText}`;
+      }
+
+      function syncControlForm(control) {
+        if (!control) return;
+        applyOnSelect.value = control.apply_on || "next_attempt";
+        controlModeSelect.value = control.mode || "normal";
+        enabledCheckbox.checked = Boolean(control.enabled);
+        armedCheckbox.checked = Boolean(control.armed);
+        txEnabledCheckbox.checked = Boolean(control.tx_enabled);
+        thresholdInput.value = String(control.vision?.threshold ?? 200);
+        minCountInput.value = String(control.vision?.min_count ?? 1);
+        gapTimeoutInput.value = String(control.stroke?.gap_timeout_ms ?? 1000);
+        maxJumpInput.value = String(control.stroke?.max_jump ?? 120);
+        smoothingAlphaInput.value = String(control.stroke?.smoothing_alpha ?? 0.35);
+      }
+
+      function readControlFormPayload() {
+        return {
+          enabled: enabledCheckbox.checked,
+          armed: armedCheckbox.checked,
+          tx_enabled: txEnabledCheckbox.checked,
+          mode: controlModeSelect.value || "normal",
+          apply_on: applyOnSelect.value || "next_attempt",
+          vision: {
+            threshold: clampNumber(thresholdInput.value, 0, 255, 200),
+            min_count: clampNumber(minCountInput.value, 1, 9999, 1),
+          },
+          stroke: {
+            gap_timeout_ms: clampNumber(gapTimeoutInput.value, 100, 10000, 1000),
+            max_jump: clampNumber(maxJumpInput.value, 1, 5000, 120),
+            smoothing_alpha: clampNumber(smoothingAlphaInput.value, 0, 1, 0.35),
+          },
+        };
+      }
+
+      function setControlButtonsBusy(busy) {
+        [
+          saveControlButton,
+          reloadControlButton,
+          pauseTxButton,
+          resumeTxButton,
+          clearSketchButton,
+          recalibrateButton,
+        ].forEach((button) => {
+          button.disabled = busy;
+        });
+      }
+
+      function refreshClaimPanel() {
+        if (!latestAttempt || !latestAttempt.result?.best_template_id) {
+          claimPanel.hidden = true;
+          claimStatusText.textContent = "This appears only when the latest attempt is the current top score for its template.";
+          return;
+        }
+
+        const championRecord = latestLeaderboards.find(
+          (row) => row.template_id === latestAttempt.result.best_template_id,
+        );
+        const champion = championRecord?.champion || null;
+        const eligible = champion && champion.attempt_id === latestAttempt.attempt_id;
+
+        if (!eligible) {
+          claimPanel.hidden = true;
+          claimStatusText.textContent = "This appears only when the latest attempt is the current top score for its template.";
+          return;
+        }
+
+        claimPanel.hidden = false;
+        claimPromptText.textContent = `${champion.template_name} champion score ${champion.score}`;
+        if (!playerNameInput.value || playerNameInput.dataset.attemptId !== String(champion.attempt_id)) {
+          playerNameInput.value = champion.player_name || "";
+          playerNameInput.dataset.attemptId = String(champion.attempt_id);
+        }
+        claimStatusText.textContent = champion.player_name
+          ? `Current champion name: ${champion.player_name}. You can update it while this attempt remains the top score.`
+          : "New top score detected. Enter a player name to claim this template champion slot.";
+      }
+
+      async function refreshHealth() {
+        try {
+          const payload = await fetchJson("/api/v1/health");
+          healthDot.classList.add("ok");
+          healthText.textContent = `${payload.service} ${payload.version} live`; 
+        } catch (error) {
+          healthDot.classList.remove("ok");
+          healthText.textContent = `API unavailable: ${error.message}`;
+        }
+
+        try {
+          const payload = await fetchJson("/api/v1/database/health");
+          dbDot.classList.toggle("ok", payload.ok);
+          dbText.textContent = payload.ok ? "database connected" : `database warning: ${payload.warning || "unavailable"}`;
+        } catch (error) {
+          dbDot.classList.remove("ok");
+          dbText.textContent = `database check failed: ${error.message}`;
+        }
+      }
+
+      async function refreshTemplates() {
+        const payload = await fetchJson("/api/v2/templates");
+        const existing = templateSelect.value;
+        templateSelect.innerHTML = payload.templates
+          .map((t) => `<option value="${t.template_id}">${t.name}</option>`)
+          .join("");
+        templateSelect.value = existing && payload.templates.some((t) => t.template_id === existing)
+          ? existing
+          : (payload.templates[0]?.template_id || "heart_v1");
+        setTemplateBackground();
+      }
+
+      async function refreshTargetTemplate() {
+        try {
+          const payload = await fetchJson(`/api/v2/wand/${selectedWand}/target-template?t=${Date.now()}`);
+          if ([...templateSelect.options].some((opt) => opt.value === payload.template_id)) {
+            templateSelect.value = payload.template_id;
+          }
+          localStorage.setItem(templateStorageKey(), payload.template_id);
+          setTemplateBackground();
+          templateStatusText.textContent = `${payload.template_name} is selected for wand ${selectedWand}.`;
+        } catch (error) {
+          const stored = localStorage.getItem(templateStorageKey());
+          if (stored && [...templateSelect.options].some((opt) => opt.value === stored)) {
+            templateSelect.value = stored;
+            setTemplateBackground();
+            templateStatusText.textContent = `Using locally remembered template ${templateSelect.options[templateSelect.selectedIndex]?.text || stored}.`;
+            return;
+          }
+          templateStatusText.textContent = `Could not load target template: ${error.message}`;
+        }
+      }
+
+      async function applyTargetTemplate() {
+        const templateId = templateSelect.value;
+        if (!templateId) {
+          templateStatusText.textContent = "Choose a template first.";
+          return;
+        }
+        try {
+          const payload = await fetchJson(`/api/v2/wand/${selectedWand}/target-template?template_id=${encodeURIComponent(templateId)}`, {
+            method: "PUT",
+          });
+          localStorage.setItem(templateStorageKey(), payload.template_id);
+          templateStatusText.textContent =
+            payload.applies_to === "current_attempt"
+              ? `${payload.template_name} locked onto the current attempt.`
+              : `${payload.template_name} saved for the next attempt.`;
+          setTemplateBackground();
+          await refreshLatestAttemptAndScore();
+        } catch (error) {
+          templateStatusText.textContent = `Could not save template: ${error.message}`;
+        }
+      }
+
+      async function refreshWands() {
+        try {
+          const payload = await fetchJson("/api/v1/wands");
+          const wands = payload.wands || [];
+          const currentValue = String(selectedWand);
+          if (wands.length === 0) {
+            wandSelect.innerHTML = `<option value="1">wand 1</option>`;
+            wandListText.textContent = "No wand has reported yet. Start the PYNQ sender and this list will populate.";
+            selectedWand = 1;
+          } else {
+            wandSelect.innerHTML = wands
+              .map((wand) => `<option value="${wand.wand_id}">wand ${wand.wand_id}</option>`)
+              .join("");
+            const match = wands.find((wand) => String(wand.wand_id) === currentValue);
+            selectedWand = match ? match.wand_id : wands[0].wand_id;
+            wandSelect.value = String(selectedWand);
+            wandListText.innerHTML = wands
+              .map((wand) => `wand ${wand.wand_id}: ${wand.active ? "active" : "idle"}, attempt ${wand.current_attempt_id ?? "-"}, points ${wand.current_points ?? 0}`)
+              .join("<br>");
+          }
+          selectedWandLabel.textContent = String(selectedWand);
+          selectedDeviceNumber = selectedWand;
+          updateSelectedControlLabels();
+        } catch (error) {
+          wandListText.textContent = `Could not load wands: ${error.message}`;
+        }
+      }
+
+      async function refreshWandStatus() {
+        try {
+          const wand = await fetchJson(`/api/v1/wand/${selectedWand}`);
+          latestWandStatus = wand;
+          latestWandStatusPerfMs = performance.now();
+          selectedDeviceNumber = Number(wand.device_number ?? selectedWand);
+          updateSelectedControlLabels();
+          liveStatusText.textContent = wand.active
+            ? `wand ${wand.wand_id} is drawing live. attempt ${wand.current_attempt_id}, ${wand.current_points} points buffered, timer ${formatDurationMs(wand.current_duration_ms)}.`
+            : `wand ${wand.wand_id} is idle. last finalized attempt ${wand.last_finalized_attempt_id ?? "-"}, duration ${formatDurationMs(wand.last_stroke_duration_ms)}.`;
+          modeValue.textContent = wand.active ? "live drawing" : "idle";
+          attemptValue.textContent = wand.current_attempt_id ?? wand.last_finalized_attempt_id ?? "-";
+          pointsValue.textContent = String(wand.current_points ?? 0);
+          renderTimerValue();
+          lastPointValue.textContent = wand.last_point_ms ?? "-";
+          closeReasonValue.textContent = wand.last_close_reason ?? "-";
+          if (wand.active) {
+            scoreValue.textContent = "drawing…";
+            scoreDetails.textContent = "Score will update after the stroke is finalized.";
+          }
+        } catch (error) {
+          latestWandStatus = null;
+          liveStatusText.textContent = `Wand status unavailable: ${error.message}`;
+          modeValue.textContent = "offline";
+          renderTimerValue();
+          selectedDeviceNumber = selectedWand;
+          updateSelectedControlLabels();
+        }
+      }
+
+      async function refreshNodeControl(forceForm = false) {
+        try {
+          updateSelectedControlLabels();
+          const payload = await fetchJson(`/api/v3/node/${selectedDeviceNumber}/status?t=${Date.now()}`);
+          nodeControlStatusText.textContent = formatNodeControlText(payload.control);
+          nodeAckText.textContent = formatNodeAckText(payload.ack);
+          if (forceForm || !controlDraftDirty) {
+            syncControlForm(payload.control);
+            controlDraftDirty = false;
+          }
+        } catch (error) {
+          nodeControlStatusText.textContent = `Node control unavailable: ${error.message}`;
+          nodeAckText.textContent = "No fresh node ack available.";
+        }
+      }
+
+      async function putNodeControl(payload, successText, forceForm = true) {
+        setControlButtonsBusy(true);
+        try {
+          const response = await fetchJson(`/api/v3/node/${selectedDeviceNumber}/control`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          controlDraftDirty = false;
+          if (forceForm) {
+            syncControlForm(response.control);
+          }
+          nodeControlStatusText.textContent = successText || formatNodeControlText(response.control);
+          nodeAckText.textContent = formatNodeAckText(response.ack);
+          await refreshNodeControl(forceForm);
+        } catch (error) {
+          nodeControlStatusText.textContent = `Control update failed: ${error.message}`;
+        } finally {
+          setControlButtonsBusy(false);
+        }
+      }
+
+      async function saveNodeControl() {
+        await putNodeControl(
+          readControlFormPayload(),
+          `Saved control draft for device ${selectedDeviceNumber}. Waiting for node ack if the change is queued.`,
+          true,
+        );
+      }
+
+      async function pauseTxNow() {
+        await putNodeControl(
+          { tx_enabled: false, apply_on: "immediate" },
+          `Transmit paused immediately for device ${selectedDeviceNumber}.`,
+          false,
+        );
+      }
+
+      async function resumeTxNow() {
+        await putNodeControl(
+          { tx_enabled: true, apply_on: "immediate" },
+          `Transmit resumed immediately for device ${selectedDeviceNumber}.`,
+          false,
+        );
+      }
+
+      async function clearSketchNow() {
+        await putNodeControl(
+          { apply_on: "immediate", commands: { clear_sketch: true } },
+          `Clear-sketch command sent to device ${selectedDeviceNumber}.`,
+          false,
+        );
+      }
+
+      async function recalibrateNow() {
+        await putNodeControl(
+          { apply_on: "immediate", commands: { recalibrate: true } },
+          `Recalibrate command sent to device ${selectedDeviceNumber}.`,
+          false,
+        );
+      }
+
+      function refreshLiveFrame() {
+        if (inflightLive) return;
+        inflightLive = true;
+        const src = q(`/api/v1/wand/${selectedWand}/live.png?t=${Date.now()}`);
+        const next = new Image();
+        next.onload = () => {
+          liveDraw.src = src;
+          liveFrameAvailable = true;
+          inflightLive = false;
+        };
+        next.onerror = () => {
+          inflightLive = false;
+          if (!liveFrameAvailable) {
+            liveStatusText.textContent = `Waiting for live frames from wand ${selectedWand}…`;
+          }
+        };
+        next.src = src;
+      }
+
+      async function refreshLatestAttemptAndScore() {
+        try {
+          const latest = await fetchJson(`/api/v1/attempt/latest?wand_id=${selectedWand}`);
+          latestAttempt = latest;
+          latestAttemptText.textContent = `attempt ${latest.attempt_id}, ${latest.num_points} points, ${formatDurationMs(latest.duration_ms)}, status ${latest.result?.status || "processed"}`;
+          if (!liveFrameAvailable || latest.result?.status === "processed") {
+            liveDraw.src = q(`${latest.image_png}?t=${Date.now()}`);
+          }
+
+          const lockedTemplateId = latest.result?.best_template_id;
+          const lockedTemplateName = latest.result?.best_template_name;
+          const lockedScore = latest.result?.score;
+
+          if (!lockedTemplateId || lockedScore == null) {
+            scoreValue.textContent = "-";
+            scoreDetails.textContent = "No template score has been locked for this attempt yet.";
+            return;
+          }
+
+          const scorePayload = await fetchJson(`/api/v2/score/latest?wand_id=${selectedWand}&template_id=${lockedTemplateId}`);
+          const best = scorePayload.best;
+          scoreValue.textContent = best ? String(best.score) : String(lockedScore);
+          scoreDetails.textContent = best
+            ? `${lockedTemplateName} | Dice ${best.metrics.dice} | IoU ${best.metrics.iou}`
+            : `${lockedTemplateName} | score ${lockedScore}`;
+          refreshClaimPanel();
+        } catch (error) {
+          latestAttempt = null;
+          latestAttemptText.textContent = `No finalized attempt yet for wand ${selectedWand}.`;
+          scoreValue.textContent = "-";
+          scoreDetails.textContent = error.message;
+          refreshClaimPanel();
+        }
+      }
+
+      async function refreshLeaderboards() {
+        try {
+          const payload = await fetchJson("/api/v3/leaderboards");
+          latestLeaderboards = payload.leaderboards || [];
+          leaderboardRows.innerHTML = latestLeaderboards.map((row) => {
+            const champion = row.champion;
+            if (!champion) {
+              return `
+                <tr>
+                  <td>${escapeHtml(row.template_name)}</td>
+                  <td class="tiny">Open</td>
+                  <td>-</td>
+                  <td>-</td>
+                </tr>
+              `;
+            }
+            return `
+              <tr>
+                <td>${escapeHtml(row.template_name)}</td>
+                <td>${escapeHtml(champion.player_name || "Unclaimed")}</td>
+                <td>${champion.score}</td>
+                <td>${champion.wand_id}</td>
+              </tr>
+            `;
+          }).join("") || `<tr><td colspan="4" class="tiny">No leaderboard entries yet.</td></tr>`;
+          refreshClaimPanel();
+        } catch (error) {
+          latestLeaderboards = [];
+          leaderboardRows.innerHTML = `<tr><td colspan="4" class="tiny">${escapeHtml(error.message)}</td></tr>`;
+          refreshClaimPanel();
+        }
+      }
+
+      async function claimChampionName() {
+        if (!latestAttempt) {
+          claimStatusText.textContent = "No latest attempt is available to claim.";
+          return;
+        }
+
+        const playerName = playerNameInput.value.trim();
+        if (!playerName) {
+          claimStatusText.textContent = "Enter a player name first.";
+          return;
+        }
+
+        claimNameButton.disabled = true;
+        try {
+          const payload = await fetchJson("/api/v3/leaderboards/claim", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              attempt_id: latestAttempt.attempt_id,
+              player_name: playerName,
+            }),
+          });
+          claimStatusText.textContent = `${payload.champion.player_name} is now the ${payload.champion.template_name} champion.`;
+          playerNameInput.value = payload.champion.player_name || playerName;
+          await refreshLeaderboards();
+        } catch (error) {
+          claimStatusText.textContent = `Could not save champion name: ${error.message}`;
+        } finally {
+          claimNameButton.disabled = false;
+        }
+      }
+
+      async function refreshDatabase() {
+        try {
+          const payload = await fetchJson("/api/v1/database/attempts?limit=15");
+          dbRows.innerHTML = payload.attempts.map((row) => `
+            <tr>
+              <td class="mono">${row.id}</td>
+              <td class="mono">${row.attempt_id}</td>
+              <td>${row.wand_id}</td>
+              <td>${formatDurationMs(row.duration_ms)}</td>
+              <td>${row.num_points}</td>
+              <td>${row.score ?? "-"}</td>
+              <td><a href="${row.image_png}" target="_blank" rel="noreferrer">open</a></td>
+            </tr>
+          `).join("") || `<tr><td colspan="7" class="tiny">No attempts stored yet.</td></tr>`;
+        } catch (error) {
+          dbRows.innerHTML = `<tr><td colspan="7" class="tiny">${error.message}</td></tr>`;
+        }
+      }
+
+      async function fullRefresh() {
+        await Promise.all([refreshHealth(), refreshWands()]);
+        await Promise.all([refreshTargetTemplate(), refreshWandStatus(), refreshLatestAttemptAndScore(), refreshDatabase()]);
+        await refreshNodeControl();
+        await refreshLeaderboards();
+        refreshLiveFrame();
+      }
+
+      wandSelect.addEventListener("change", () => {
+        selectedWand = Number(wandSelect.value || "1");
+        selectedDeviceNumber = selectedWand;
+        controlDraftDirty = false;
+        latestWandStatus = null;
+        updateSelectedControlLabels();
+        liveFrameAvailable = false;
+        renderTimerValue();
+        fullRefresh();
+      });
+
+      templateSelect.addEventListener("change", () => {
+        setTemplateBackground();
+        templateStatusText.textContent = `Template changed locally to ${templateSelect.options[templateSelect.selectedIndex]?.text || templateSelect.value}. Click “Use This Template” to lock it.`;
+      });
+
+      applyTemplateButton.addEventListener("click", applyTargetTemplate);
+      refreshButton.addEventListener("click", fullRefresh);
+      saveControlButton.addEventListener("click", saveNodeControl);
+      reloadControlButton.addEventListener("click", async () => {
+        controlDraftDirty = false;
+        await refreshNodeControl(true);
+      });
+      pauseTxButton.addEventListener("click", pauseTxNow);
+      resumeTxButton.addEventListener("click", resumeTxNow);
+      clearSketchButton.addEventListener("click", clearSketchNow);
+      recalibrateButton.addEventListener("click", recalibrateNow);
+      claimNameButton.addEventListener("click", claimChampionName);
+
+      [
+        applyOnSelect,
+        controlModeSelect,
+        enabledCheckbox,
+        armedCheckbox,
+        txEnabledCheckbox,
+        thresholdInput,
+        minCountInput,
+        gapTimeoutInput,
+        maxJumpInput,
+        smoothingAlphaInput,
+      ].forEach((el) => {
+        el.addEventListener("input", markControlDraftDirty);
+        el.addEventListener("change", markControlDraftDirty);
+      });
+
+      (async () => {
+        await refreshTemplates();
+        await fullRefresh();
+        setInterval(refreshHealth, 4000);
+        setInterval(refreshWands, 1500);
+        setInterval(refreshWandStatus, 500);
+        setInterval(refreshNodeControl, 1200);
+        setInterval(refreshLiveFrame, 180);
+        setInterval(renderTimerValue, 120);
+        setInterval(refreshLatestAttemptAndScore, 1200);
+        setInterval(refreshLeaderboards, 2500);
+        setInterval(refreshDatabase, 5000);
+      })();
+    </script>
+  </body>
+</html>
