@@ -446,6 +446,129 @@ presented model.`
 
 ---
 
+## Mingze
+
+### Planned responsibility
+
+The planning records place Mingze on the FPGA node and local processing track,
+alongside Wells.
+
+That track covered node-side software, local visual output, DMA/MMIO
+orchestration, UDP transmission, and possible FPGA-side acceleration work.
+
+### Confirmed evidence
+
+The visible GitHub evidence now shows a Mingze-associated authored commit on
+the `feat/hardware` branch:
+
+- `6dcf9b2` (`2026-03-20`) by `MSB_233 <msb_233@foxmail.com>`:
+  `Added hardware description and test codes`
+
+This commit adds concrete artefacts in three useful categories:
+
+- physical camera-system documentation and hardware assets
+  - `hardware/camera/README.md`
+  - `hardware/camera/B0332_OV9281_Global_Shutter_UVC_Camera_Datasheet.pdf`
+  - `hardware/camera/CamMount/CamCap.step`
+  - `hardware/camera/CamMount/CamTestStand v2.step`
+  - `hardware/camera/CamMount/Mount.png`
+- final-wand physical artefacts
+  - `hardware/wand/current_led_wand/Wand.png`
+  - `hardware/wand/current_led_wand/Wand_schematic.png`
+  - `hardware/wand/current_led_wand/wand v4.step`
+- auxiliary node-side test scripts
+  - `FPGA/runtime/test/Full_ps.py`
+  - `FPGA/runtime/test/HDMI_test.py`
+
+This is sufficient to treat Mingze’s contribution as clearly evidenced rather
+than pending or speculative.
+
+### Technical character of the visible branch work
+
+The visible branch work is best described as hardware-support and validation
+work around the final adopted physical system, rather than as primary ownership
+of the final integrated runtime.
+
+The camera-side artefacts document and support the physical sensing setup used
+by the final system, including:
+
+- the adopted global-shutter camera choice
+- physical mount / stand CAD assets
+- setup notes for the camera and optical conditions
+
+The wand-side artefacts similarly support the final LED-wand direction by
+adding:
+
+- a wand CAD file
+- a schematic image
+- physical photos/renders
+
+The two Python scripts also indicate practical node-side validation effort:
+
+- `Full_ps.py` explores thresholding and contour-based spot detection in OpenCV
+- `HDMI_test.py` exercises live camera bring-up and HDMI output on the PYNQ
+  base overlay
+
+These are auxiliary bring-up / verification artefacts rather than the adopted
+main runtime path, but they are relevant to making the physical system usable.
+
+### Relation to the final presented model
+
+Unlike the ESP32 exploratory work, Mingze’s visible branch artefacts align
+directly with the final adopted LED-wand + camera + PYNQ system.
+
+The conservative distinction is therefore:
+
+- Mingze contributed concrete, final-system-relevant hardware and test support
+- this includes physical camera and wand artefacts plus auxiliary validation
+  code
+- the visible GitHub evidence does not by itself show primary ownership of the
+  final adopted PS/runtime path or the final centroid-based PL implementation
+
+### Final-phase collaboration
+
+The current project record also indicates that Mingze was highly committed in
+the final pre-demonstration phase and contributed alongside Yi and Wells during
+the late rapid development, testing, debugging, and integration push.
+
+This should be preserved in report wording so that Mingze’s contribution is not
+reduced only to static hardware artefacts.
+
+### Report-safe interpretation
+
+The safest interpretation for the final report is:
+
+`Mingze contributed final-system-relevant hardware and validation support,
+including camera setup documentation, camera-mount CAD assets, LED-wand CAD and
+schematic artefacts, and auxiliary PYNQ-side test scripts. These contributions
+align with the physical sensing setup used by the final presented model. In the
+final pre-demonstration phase, Mingze also contributed actively to rapid
+testing, debugging, and integration work. Based on current GitHub evidence
+alone, however, this should be distinguished from primary ownership of the
+final adopted PS/runtime and centroid-based FPGA implementation.`
+
+### Additional management interpretation
+
+If needed for the project-management section, the following wording is
+defensible:
+
+`Mingze’s visible contribution strengthened the physical sensing setup and
+practical validation path of the project, particularly through hardware
+documentation, CAD artefacts, and node-side bring-up tests. This work appears
+to have supported the final integrated system and the late-stage recovery and
+validation effort, even though primary ownership of the final adopted runtime
+implementation remained elsewhere.`
+
+### Cautions
+
+- the `MSB_233` authored commit is being treated as Mingze’s branch evidence
+  based on current project clarification
+- GitHub evidence clearly supports hardware-side and auxiliary test support
+- GitHub alone should not be used to overstate primary ownership of the final
+  adopted runtime or PL path
+
+---
+
 ## Apshara
 
 ### Planned responsibility
