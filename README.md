@@ -4,6 +4,18 @@ FPGA-Wand is a distributed drawing system: a bright LED wand is tracked by a
 camera, reduced to centroid data on a PYNQ-Z1, streamed to a cloud service,
 and turned into live drawings, scores, leaderboards, and node-control actions.
 
+## Why This Project Is Interesting
+
+This repository is best read as a compact embedded-systems portfolio piece. The
+final system combines:
+
+- FPGA + PS + cloud co-design in one working pipeline
+- real-time point streaming over UDP
+- bidirectional node control over HTTP
+- multi-node operation against a shared backend
+- live rendering, scoring, persistence, and leaderboards
+- a browser-based control and observability console
+
 ## Start Here
 
 If you are new to the repo, read these in order:
@@ -42,7 +54,12 @@ shared documentation tree:
 - [software/](software/)
   the cloud service, protocol definitions, and software-side tools
 - [docs/](docs/)
-  architecture, validation, report material, and group/project-management notes
+  architecture, validation, runbooks, and archival project notes
+
+For newcomers focused on the technical system, the most important paths are
+`FPGA/`, `software/`, and `docs/architecture/`. The `docs/group/` subtree is
+kept for archival project-management and report-preparation purposes, but it is not
+required to understand the final runtime design.
 
 ## Choose A Path
 
@@ -54,6 +71,7 @@ shared documentation tree:
 | The Wand Brain backend | [software/cloud/README.md](software/cloud/README.md) | [software/cloud/report/backend_system_report.md](software/cloud/report/backend_system_report.md) |
 | The frontend and live console | [software/cloud/frontend/README.md](software/cloud/frontend/README.md) | [software/cloud/frontend/index.html](software/cloud/frontend/index.html) |
 | The database model and persistence | [software/cloud/database/README.md](software/cloud/database/README.md) | [software/cloud/database/models.py](software/cloud/database/models.py) |
+| How to run the final system | [docs/demo/final_runbook.md](docs/demo/final_runbook.md) | [software/tools/README.md](software/tools/README.md) |
 | Validation evidence | [docs/testing/system_validation_report.md](docs/testing/system_validation_report.md) | [software/tools/README.md](software/tools/README.md) |
 
 ## What The Final System Does
@@ -73,6 +91,25 @@ The architecture deliberately separates:
 
 - UDP as the low-latency point-stream data plane
 - HTTP as the control and dashboard plane
+
+## Engineering Highlights
+
+- **Narrow, stable PL design**
+  The adopted FPGA path uses a compact centroid-reduction IP rather than a
+  heavier full-image pipeline, keeping the PL focused on deterministic
+  acceleration.
+- **Policy in the PS**
+  The PYNQ PS handles filtering, stroke state, node control, and networking, so
+  behaviour can be tuned without reworking the PL.
+- **Stateful cloud runtime**
+  Wand Brain reconstructs live attempts in memory, finalizes them into
+  renderable images, scores them, and persists results only when appropriate.
+- **Separation of planes**
+  UDP is reserved for the point-stream path, while HTTP handles control,
+  dashboard status, and operator-facing behaviour.
+- **Operator-friendly system**
+  The final web console supports monitoring, template selection, node control,
+  recent attempts, stroke timing, and leaderboards from one page.
 
 ## Local Development
 
@@ -100,6 +137,10 @@ The main demo can use the configured EC2 address or an overridden
 
 - `DEVICE_NUMBER`
 - `WAND_ID`
+
+For a more complete run path, see:
+
+- [docs/demo/final_runbook.md](docs/demo/final_runbook.md)
 
 ## Source Of Truth
 

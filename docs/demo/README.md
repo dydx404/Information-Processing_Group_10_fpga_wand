@@ -1,6 +1,12 @@
 # Demo Notes
 
-This folder is reserved for demo scripts, screenshots, or operator notes tied
-to live demonstrations.
+This folder contains demo-oriented notes and runnable operator guidance tied to
+the final presented system.
 
-The current runnable helpers live under [../../software/tools/](../../software/tools/).
+Start with:
+
+- [final_runbook.md](final_runbook.md)
+
+The helper scripts themselves live under:
+
+- [../../software/tools/](../../software/tools/)

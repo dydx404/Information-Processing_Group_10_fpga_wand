@@ -8,6 +8,7 @@ entire repository tree.
 - [newcomer_guide.md](newcomer_guide.md)
 - [architecture/overview.md](architecture/overview.md)
 - [testing/system_validation_report.md](testing/system_validation_report.md)
+- [demo/final_runbook.md](demo/final_runbook.md)
 
 ## By Topic
 
@@ -18,14 +19,17 @@ entire repository tree.
 - Testing and validation:
   [testing/test-plan.md](testing/test-plan.md)
   [testing/system_validation_report.md](testing/system_validation_report.md)
+- Demo and operation:
+  [demo/README.md](demo/README.md)
+  [demo/final_runbook.md](demo/final_runbook.md)
 - Report and team/project-management material:
   [group/](group/)
   [report/README.md](report/README.md)
 
 ## Important Note
 
-The `group/` subtree contains coursework, planning, contribution-tracking, and
-report-preparation material. It is useful for understanding project management,
+The `group/` subtree contains archival project-management, planning,
+contribution-tracking, and report-preparation material. It is useful context,
 but it is not the primary entry point for the runtime architecture.
 
 For code-oriented entrypoints, go next to:

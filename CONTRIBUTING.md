@@ -1,14 +1,17 @@
 # Contributing Guide
 
-This repository contains the group coursework project for
-**Information Processing – Group 10**.
+This repository contains the canonical implementation and supporting
+documentation for **FPGA-Wand**.
+
+The project originated in an academic setting, but this repository is
+maintained as the reference implementation of the final adopted system.
 
 The system spans multiple layers:
 - Hardware notes and physical setup
 - FPGA / Vivado hardware and PYNQ runtime
 - Cloud backend and database
 
-To keep the project stable, assessable, and reproducible, all
+To keep the project stable, reproducible, and easy to navigate, all
 contributions must follow the rules below.
 
 ---
@@ -18,13 +21,13 @@ contributions must follow the rules below.
 We use a **feature-branch workflow**.
 
 ### Protected branch
-- `main`
+- `develop`
   - Always demo-ready
   - No direct pushes
   - All merges must go through Pull Requests
 
 ### Working branches
-Create branches from `main` using:
+Create branches from `develop` using:
 feature/<layer>-<short-description>
 
 Examples:
@@ -64,7 +67,7 @@ If you are unsure where something belongs, ask before committing.
 
 The following must **never** be committed:
 
-- Lab code from previous coursework
+- Unrelated lab or course-exercise code
 - Vivado build output directories (`*.runs/`, `.cache/`, `.hw/`, etc.)
 - Secrets or credentials:
   - `.pem`, `.key`, `.env`
@@ -133,7 +136,7 @@ Testing should be intentional and documented.
 ## 9. Communication
 
 If something is unclear:
-- Ask in the group chat
-- Or open a GitHub Issue
+- open a GitHub Issue
+- or document the uncertainty in the PR description
 
 By contributing to this repository, you agree to follow this guide.

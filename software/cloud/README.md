@@ -20,6 +20,18 @@ Brain deployment.
   local runtime files such as the SQLite database, node-control state, and
   generated output images.
 
+## What This Subtree Delivers
+
+The cloud side is not just a packet sink. In the final system it provides:
+
+- UDP ingest for wand point packets
+- live reconstruction of active strokes
+- rasterized drawing previews
+- template scoring and result persistence
+- node control over HTTP
+- a single-page live console for operation and debugging
+- leaderboard and recent-attempt views
+
 ## Canonical vs Runtime
 
 Edit the source in this directory tree for GitHub.
@@ -35,6 +47,25 @@ For most contributors, the most useful files are:
 - [frontend/index.html](frontend/index.html)
 - [database/models.py](database/models.py)
 - [backend/versions/brain_v2_scoring/src/brain/api/server.py](backend/versions/brain_v2_scoring/src/brain/api/server.py)
+
+## Quick Run
+
+To run the cloud service locally:
+
+```bash
+cd software/cloud
+bash start_script.sh --install-deps
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+For a step-by-step rerun path, see:
+
+- [../../docs/demo/final_runbook.md](../../docs/demo/final_runbook.md)
 
 ## API Documentation
 

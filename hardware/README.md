@@ -2,6 +2,16 @@
 
 This directory contains the physical build-side documentation for the project.
 
+## What To Expect Here
+
+This subtree is intentionally lighter than `FPGA/` and `software/`, because the
+main engineering depth of the final system sits in the node runtime and cloud
+service. Use `hardware/` for physical context:
+
+- what the wand looked like
+- how the camera was positioned
+- how the physical setup supported reliable tracking
+
 ## Subsystems
 
 - [wand/](wand/)

@@ -13,6 +13,11 @@ FPGA-Wand is a camera-based drawing system in which a PYNQ-Z1 extracts
 centroid-style wand positions and streams them to a cloud service that renders,
 scores, stores, and displays the result live.
 
+If you are reading the repo as a portfolio or CV project, the right mental
+model is:
+
+`camera tracking + FPGA/PS runtime + network protocol + cloud runtime + live operator UI`
+
 ---
 
 ## What Is Final And What Is Background
@@ -32,6 +37,9 @@ If you only want to understand the final demonstrated system, focus on:
 Use the `group/` subtree mainly for report-writing, planning, and contribution
 tracking rather than for the runtime architecture itself.
 
+If your goal is only to understand the technical implementation, you can safely
+ignore most of `docs/group/`.
+
 ---
 
 ## The 10-Minute Reading Path
@@ -48,8 +56,10 @@ Read these in order:
    how a point travels from PYNQ to the cloud
 5. [../software/cloud/report/backend_system_report.md](../software/cloud/report/backend_system_report.md)
    how the backend/web/database side fits together
+6. [demo/final_runbook.md](demo/final_runbook.md)
+   how the final system is launched and checked in practice
 
-If you complete those five reads, you will understand most of the final system.
+If you complete those six reads, you will understand most of the final system.
 
 ---
 
@@ -136,6 +146,10 @@ For final-system understanding, prioritize:
 - the centroid-based FPGA path
 - the PYNQ runtime in `FPGA/runtime/`
 - the Wand Brain service in `software/cloud/`
+
+For demonstration and rerun steps, also use:
+
+- [demo/final_runbook.md](demo/final_runbook.md)
 
 ---
 

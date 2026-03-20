@@ -16,6 +16,17 @@ It is served directly by the FastAPI app in [../main.py](../main.py).
 - leaderboards
 - stroke timing
 
+## Why It Matters
+
+The frontend is the operator-facing surface of the project. It turns the
+backend from a raw ingest service into something that can be:
+
+- demonstrated live
+- inspected during integration
+- controlled during multi-node tests
+- used to validate whether packets, attempts, and scoring are behaving as
+  expected
+
 The frontend is intentionally simple and debuggable: it uses HTTP polling
 rather than a separate SPA framework or WebSocket stack.
 

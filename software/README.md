@@ -3,6 +3,16 @@
 This directory contains the EC2-side software stack and software-facing support
 material.
 
+## What Matters Most
+
+If you are evaluating the project as a technical portfolio, this directory is
+where the networked system behaviour becomes visible:
+
+- the cloud runtime ingests and reconstructs drawings
+- the database stores finalized history and leaderboard state
+- the live console exposes the system to an operator
+- the tools provide repeatable checks and demo paths
+
 ## If You Open One File First
 
 For most newcomers, start with:
@@ -35,6 +45,8 @@ If you want the shortest path through the software side, read:
 2. [protocol/protocol/pynq-udp-flow.md](protocol/protocol/pynq-udp-flow.md)
 3. [protocol/protocol/brain-web_api.md](protocol/protocol/brain-web_api.md)
 4. [cloud/report/backend_system_report.md](cloud/report/backend_system_report.md)
+5. [../docs/demo/final_runbook.md](../docs/demo/final_runbook.md)
 
 This sequence takes you from the live data path to the served APIs and then to
-the backend/database/frontend architecture.
+the backend/database/frontend architecture, with a runnable final-system path
+at the end.

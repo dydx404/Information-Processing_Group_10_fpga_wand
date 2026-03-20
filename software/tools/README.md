@@ -23,3 +23,7 @@ operator checks.
 These scripts are for validation and demos. They are not the canonical runtime
 itself; that lives under [cloud/](../cloud/) while the board-side runtime lives
 under [../../FPGA/](../../FPGA/).
+
+If you are evaluating the project quickly, this folder is a good place to look
+for evidence that the system can be exercised and checked without manual packet
+crafting.
