@@ -1,0 +1,334 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=1.6cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue!50!black
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\setlist[itemize]{leftmargin=*, itemsep=0.2em, topsep=0.2em}
+\setlist[enumerate]{leftmargin=*, itemsep=0.2em, topsep=0.2em}
+
+\title{\vspace{-1.2em}\textbf{FPGA Wand: A Multi-Node Interactive Drawing System with Local FPGA Processing and Cloud Coordination}\vspace{-0.8em}}
+\author{[Author Name]}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-1.4em}
+
+\section{Purpose of the System}
+
+The aim of this project was to build a distributed interactive system in which
+multiple FPGA SoC nodes perform meaningful local processing, exchange compact
+events with a cloud service, and can also be influenced by server-side control.
+The final implemented system is an interactive ``wand drawing'' platform built
+around PYNQ boards, a camera-based local processing pipeline, and a cloud
+service called \emph{Wand Brain}. Each node observes a bright LED wand through a
+camera, reduces each frame locally to a centroid-like point, and transmits this
+point stream to the cloud as stroke events. The cloud reconstructs attempts,
+renders them live in a browser dashboard, scores finalized strokes against
+target templates, maintains leaderboards, and sends control settings back to
+the nodes.
+
+This final system was chosen because it satisfies all minimum functional
+requirements while remaining technically rich. It demonstrates local processing
+on the FPGA SoC device, server-side event processing, bidirectional
+communication between node and server, and concurrent operation of at least two
+nodes. The design also leaves clear space for extension, including alternative
+templates, richer scoring, and more advanced node-side vision.
+
+\section{Overall Architecture}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=0.85cm and 0.65cm,
+  box/.style={draw, rounded corners, align=center, minimum width=2.4cm, minimum height=0.9cm, fill=blue!4},
+  smallbox/.style={draw, rounded corners, align=center, minimum width=2.15cm, minimum height=0.8cm, fill=green!4},
+  cloudbox/.style={draw, rounded corners, align=center, minimum width=2.65cm, minimum height=0.95cm, fill=orange!6},
+  line/.style={-{Latex[length=2mm]}, thick}
+]
+\node[box] (camera) {USB Camera\\BGR Frames};
+\node[box, right=of camera] (ps) {PYNQ PS\\OpenCV preprocessing\\UDP/HTTP logic};
+\node[smallbox, below=of ps] (dma) {AXI DMA};
+\node[smallbox, left=of dma] (pl) {Custom PL IP\\frame\_centroid\_axi};
+\node[cloudbox, right=of ps, xshift=1.0cm] (brain) {EC2 ``Wand Brain''\\UDP ingest, render, score, persist};
+\node[cloudbox, below=of brain] (db) {SQLite history\\leaderboards};
+\node[box, above=of brain] (web) {Browser dashboard\\live view and control};
+
+\draw[line] (camera) -- node[above, font=\scriptsize] {frame capture} (ps);
+\draw[line] (ps) -- node[right, font=\scriptsize] {binary frame buffer} (dma);
+\draw[line] (dma) -- node[below, font=\scriptsize] {AXI stream} (pl);
+\draw[line] (pl) -- node[left, font=\scriptsize] {AXI-Lite stats} (ps);
+\draw[line] (ps) -- node[above, font=\scriptsize] {24-byte UDP point packets} (brain);
+\draw[line] (brain) -- node[right, font=\scriptsize] {finalized attempts} (db);
+\draw[line] (web) -- node[right, font=\scriptsize] {HTTP polling} (brain);
+\draw[line] (brain.west) to[bend right=18] node[below, font=\scriptsize] {HTTP node control} (ps.east);
+\end{tikzpicture}
+\caption{End-to-end architecture of the final system. The fast data plane uses
+UDP point events from the node to the cloud, while the control plane uses HTTP
+from the cloud back to the node.}
+\label{fig:system-architecture}
+\end{figure}
+
+Figure~\ref{fig:system-architecture} shows the split between the local node and
+the cloud service. The local node combines the programmable logic (PL) and the
+processing system (PS) of the PYNQ board. The PS is responsible for camera
+capture, grayscale conversion, resizing to $640 \times 480$, thresholding,
+runtime filtering, stroke management, and networking. The PL accelerates the
+repetitive per-pixel reduction stage by scanning the thresholded binary frame
+and exposing compact image statistics instead of a full processed image.
+
+\subsection*{Node-side PS/PL partition}
+
+The adopted FPGA design consists of a custom AXI-stream IP,
+\texttt{frame\_centroid\_axi}, attached to an AXI DMA engine and accessed by the
+PS through AXI-Lite. After the PS thresholds a frame, it writes the binary
+image into a DMA buffer in memory. The DMA then streams the image into the PL,
+where four pixels are processed per 32-bit beat. The custom IP accumulates:
+\begin{itemize}
+  \item the horizontal coordinate sum $\sum x$,
+  \item the vertical coordinate sum $\sum y$,
+  \item the foreground-pixel count,
+  \item a frame identifier, and
+  \item a valid bit.
+\end{itemize}
+The PS reads these registers through MMIO and computes the centroid using
+$c_x=\sum x / \mathrm{count}$ and $c_y=\sum y / \mathrm{count}$. This is a
+deliberate partition: the PL performs the regular streaming arithmetic, while
+the PS keeps the flexible logic in software, including filtering, control
+handling, sketch rendering, and networking.
+
+\subsection*{Cloud-side runtime}
+
+The cloud service is a FastAPI application deployed on EC2. It is divided into
+two layers. The base runtime receives UDP packets on port 41000, validates and
+parses them into structured point events, groups them into live attempts, and
+renders both live and finalized drawings. A wrapper layer adds persistence,
+template selection, node control, recent-attempt views, leaderboards, and the
+HTML dashboard. The server also exposes health, template, and debugging routes
+over HTTP on port 8000.
+
+The browser frontend is a deliberately simple single-page console. It polls the
+backend rather than using WebSockets, which made the system easier to debug and
+deploy during rapid iteration. Live frame polling is configured at 180\,ms,
+selected-wand status at 500\,ms, and health/leaderboard polling at slower
+intervals. This produces a responsive operator view while keeping the client
+logic lightweight.
+
+\section{Performance Metrics and Their Rationale}
+
+Because the project is an interactive distributed system, its performance
+cannot be described by a single number. The most relevant metrics are the ones
+that determine whether a user can draw reliably, whether the cloud reconstructs
+the intended stroke, and whether the FPGA acceleration is justified.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{2.8cm} >{\raggedright\arraybackslash}p{4.1cm} X}
+\toprule
+\textbf{Metric} & \textbf{Why it matters} & \textbf{How it is evidenced in this project} \\
+\midrule
+End-to-end stroke correctness & The system must turn a physical wand motion into the correct live and finalized attempt. & Verified through live rendering, finalized PNG endpoints, scoring output, and synthetic plus live-board tests. \\
+Interaction responsiveness & Drawing is only usable if the system responds quickly enough for human feedback. & Compact 24-byte point packets, local point gating on the node, and a responsive polling dashboard were used to reduce perceived delay. \\
+Multi-node isolation & Minimum requirements demand concurrent receive/transmit from at least two nodes. & \texttt{device\_number} and \texttt{wand\_id} are carried through transport, backend state, and UI; two-node live validation was completed. \\
+Control-plane correctness & The server must be able to affect local processing on the nodes. & HTTP control and acknowledgement routes were added, with runtime changes such as \texttt{enabled}, \texttt{armed}, thresholds, and recalibration. \\
+FPGA efficiency & The local hardware must provide useful acceleration without becoming too large or fragile to integrate. & The final PL design performs only the image-reduction stage in hardware, streams four pixels per beat, and met timing closure. \\
+\bottomrule
+\end{tabularx}
+\caption{Chosen performance metrics for the implemented system.}
+\label{tab:metrics}
+\end{table}
+
+The system was intentionally evaluated in terms of correctness, responsiveness,
+and deployability rather than headline throughput alone. For example, the UDP
+protocol sends one point per 24-byte datagram rather than a frame or a large
+batch. This keeps the transport lightweight and suits interactive drawing, for
+which occasional packet loss is less harmful than retransmission delay. By the
+same logic, the frontend uses frequent polling only where it most affects user
+feedback, such as live frame refresh, while slower-changing views use longer
+poll intervals.
+
+\section{Design Decisions and Evaluation}
+
+\subsection*{Hardware/software split}
+
+One of the most important design decisions was to avoid placing the entire
+vision pipeline into the PL. Instead, the PL implements the streaming reduction
+stage only, while the PS performs thresholding, centroid division, validity
+rules, and network communication. This trades maximum hardware throughput for
+integration reliability and flexibility. In practice, it was a good compromise:
+the custom IP still accelerates the repetitive per-pixel work, but changes to
+tracking behaviour, stroke rules, and cloud interaction remain easy to make in
+software.
+
+\subsection*{UDP data plane, HTTP control plane}
+
+The system uses two protocols with distinct roles. The data plane uses the
+\texttt{wb-point-v1} UDP packet format, where each datagram contains one point,
+stroke flags, node identity, and a timestamp. This design keeps latency low and
+allows explicit stroke lifecycle events such as \texttt{STROKE\_START} and
+\texttt{STROKE\_END}. In contrast, the control plane uses HTTP because control
+messages need versioning, readability, and easy debugging. This made it
+straightforward to add node control, health checks, and acknowledgements
+without destabilizing the point-stream path.
+
+\subsection*{In-memory live state with persisted finalized history}
+
+The cloud keeps active strokes in memory and only persists attempts once they
+are finalized. This was another deliberate trade-off. It avoids database
+overhead on every incoming point and allows the backend to update live images
+very cheaply. The disadvantage is that active in-memory state is lost if the
+server restarts. For the current project stage this was acceptable, because
+historical scoring, recent attempts, and leaderboards all depend on finalized
+rather than partially complete strokes.
+
+\subsection*{Single-page dashboard}
+
+The dashboard is implemented as a single HTML page with embedded JavaScript.
+This choice reduced framework overhead and kept the live demo easy to deploy on
+EC2. It also supported rapid additions such as node control, stroke timers, and
+leaderboards. The downside is that the page relies on polling rather than true
+server push, so it is better suited to this lab-scale console than to a large
+production deployment. For the project brief, however, the simplicity and
+clarity of this approach were strong advantages.
+
+\section{Testing Approach and Validation}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=0.55cm and 0.6cm,
+  flowstep/.style={draw, rounded corners, align=center, minimum width=2.6cm, minimum height=0.85cm, fill=gray!8},
+  flow/.style={-{Latex[length=2mm]}, thick}
+]
+\node[flowstep] (cloud) {Cloud sanity check\\health, templates, dashboard};
+\node[flowstep, right=of cloud] (udp) {UDP connectivity\\synthetic stroke injection};
+\node[flowstep, right=of udp] (smoke) {Smoke test\\render + finalize paths};
+\node[flowstep, below=of udp] (board) {PYNQ validation\\camera, DMA, MMIO, control};
+\node[flowstep, left=of board] (multi) {Two-node test\\simultaneous draw paths};
+\node[flowstep, right=of board] (ui) {Frontend regression\\score, timer, leaderboard};
+
+\draw[flow] (cloud) -- (udp);
+\draw[flow] (udp) -- (smoke);
+\draw[flow] (smoke) -- (ui);
+\draw[flow] (smoke) -- (board);
+\draw[flow] (board) -- (multi);
+\draw[flow] (board) -- (ui);
+\end{tikzpicture}
+\caption{Testing flow used to move from isolated service checks to full
+integrated multi-node validation.}
+\label{fig:test-flow}
+\end{figure}
+
+The testing strategy combined tool-based validation with live integrated
+demonstrations. Figure~\ref{fig:test-flow} summarizes the progression from
+isolated checks to full-system tests.
+
+At the cloud-only level, the backend was first validated through a health
+check, template enumeration, and dashboard loading. Lightweight Python tools
+were then used to inject synthetic UDP strokes and verify that the latest
+attempt, live image, and finalized image endpoints behaved correctly. A further
+smoke test exercised the full finalize-and-render path without requiring the
+camera or FPGA board, which made regression testing much faster.
+
+Board-level validation focused on the FPGA SoC runtime. This included camera
+bring-up, repeated DMA/MMIO frame updates, correct extraction of centroid
+statistics, and successful communication with the cloud over both UDP and HTTP.
+The control-plane path was checked by observing control acknowledgements under
+the node-control API. These tests confirmed that the server could affect local
+node behaviour by enabling or disabling tracking, changing thresholds and gap
+timeouts, and triggering recalibration.
+
+The final integration stage used real hardware, the actual FPGA design, the EC2
+deployment, and the browser dashboard. Both one-node and two-node sessions were
+completed. The following final-system behaviours were validated:
+\begin{itemize}
+  \item correct UDP receive and parse on the cloud;
+  \item live stroke plotting during active drawing;
+  \item finalized-attempt rendering and template scoring;
+  \item recent-attempt and database-backed history updates;
+  \item HTML-based node control and acknowledgement;
+  \item leaderboard promotion and champion-name claim logic; and
+  \item simultaneous receive/transmit from two nodes.
+\end{itemize}
+
+This staged approach was particularly important because several integration
+issues appeared only during full-system testing. Examples included camera
+bring-up fragility on the PYNQ board, the need to separate backend-owned
+\texttt{attempt\_id} values from incoming UDP \texttt{stroke\_id} values, and
+ordering the recent-attempt list by finalization time rather than creation time.
+Each issue was addressed without changing the overall architecture, which is a
+useful indication that the design boundaries were sensible.
+
+\section{Device Resources and Hardware Implementation}
+
+The adopted FPGA implementation is intentionally compact. Rather than storing
+frames or implementing a full image-processing graph in hardware, the custom PL
+block performs only what is both repetitive and structurally regular: scanning
+the thresholded image stream and accumulating foreground statistics. This has
+several resource-related advantages:
+\begin{itemize}
+  \item no connected-component analysis in hardware;
+  \item no hardware frame buffer for the processed image;
+  \item no hardware division for centroid calculation;
+  \item a narrow AXI-Lite register interface for result readback; and
+  \item reuse of the PS for all policy, filtering, and network logic.
+\end{itemize}
+
+This means the PL resource footprint is dominated by simple counters,
+accumulators, stream handling, and interface logic rather than by large memory
+structures or complex arithmetic. Architecturally, this is a strong fit for the
+project: the node still benefits from genuine hardware acceleration, but the
+design remains understandable and practical to debug.
+
+The archived implementation evidence includes a timing summary rather than a
+complete post-implementation utilization table. Even so, the available timing
+result is encouraging: the implemented design closed timing with setup worst
+negative slack of 11.636\,ns, hold slack of 0.045\,ns, pulse-width slack of
+8.750\,ns, and zero failing endpoints. This confirms that the final chosen PL
+path was not only functionally useful but also straightforward to implement
+reliably on the target platform.
+
+\section{Conclusion}
+
+The final system demonstrates a complete multi-node FPGA-to-cloud interactive
+application rather than a collection of isolated components. Each node performs
+local camera processing on the PYNQ board, the PL accelerates the image
+reduction stage, the PS packages and transmits stroke events over UDP, the
+cloud reconstructs and scores attempts, and the server can also influence the
+node through HTTP control. The system therefore satisfies the key coursework
+requirements while also providing additional functionality such as live plotting,
+template-based scoring, stroke timers, and leaderboards.
+
+From an engineering perspective, the most successful design choice was the
+clear separation of responsibilities: regular streaming arithmetic in the PL,
+flexible policy and networking in the PS, low-latency event transport over UDP,
+and coordination, persistence, and presentation in the cloud service. The main
+remaining limitations are also clear. The current centroid-based tracker cannot
+separate multiple bright blobs, active live state is not preserved across a
+server restart, and the dashboard relies on polling rather than push updates.
+These limitations provide a direct roadmap for future work, but they do not
+prevent the present system from operating as a coherent and demonstrably working
+multi-node information-processing platform.
+
+\end{document}
