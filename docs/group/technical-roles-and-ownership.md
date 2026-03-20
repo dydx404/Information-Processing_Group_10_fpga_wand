@@ -1,6 +1,19 @@
 # Technical Roles and Ownership Structure  
 **FPGA-Wand Project**
 
+> This document records the **intended technical ownership structure**
+> established during project planning.
+>
+> It should be read as a statement of the **original allocation of roles and
+> responsibilities**, not as a final record of who delivered each adopted part
+> of the final presented system.
+>
+> Final report writing should therefore distinguish between:
+>
+> - planned responsibility
+> - actual delivered work
+> - exploratory or partial work that was not adopted in the final model
+
 This document defines the **technical ownership, responsibility boundaries, and integration rules** for the FPGA-Wand project.
 
 The system is a **distributed point-tracking and shape recognition system**, not a gesture-recognition system.  

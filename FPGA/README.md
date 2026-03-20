@@ -2,6 +2,15 @@
 
 This directory contains the FPGA-side implementation of the project.
 
+## If You Open One File First
+
+For most newcomers, start with:
+
+- [runtime/ps_pl_flow.md](runtime/ps_pl_flow.md)
+
+That document explains the final adopted PS/PL signal flow and points back to
+the relevant runtime code and Vivado artefacts.
+
 ## Main Areas
 
 - [runtime/](runtime/)
@@ -41,6 +50,17 @@ integration, and live control behavior.
 
 For the detailed step-by-step version, see
 [runtime/ps_pl_flow.md](runtime/ps_pl_flow.md).
+
+## Newcomer Route
+
+If you are trying to understand the FPGA contribution quickly, read in this
+order:
+
+1. [runtime/ps_pl_flow.md](runtime/ps_pl_flow.md)
+2. [runtime/pynq_wand_brain_demo.py](runtime/pynq_wand_brain_demo.py)
+3. [runtime/pynq_udp_bridge.py](runtime/pynq_udp_bridge.py)
+4. [designs/centroid_pipeline/used_version/README.md](designs/centroid_pipeline/used_version/README.md)
+5. [designs/centroid_pipeline/used_version/source/frame_centroid.v](designs/centroid_pipeline/used_version/source/frame_centroid.v)
 
 ## Suggested Tour
 
