@@ -6,6 +6,7 @@ the final presented system.
 Start with:
 
 - [final_runbook.md](final_runbook.md)
+- [video_script_10min.md](video_script_10min.md)
 
 The helper scripts themselves live under:
 
