@@ -25,4 +25,33 @@ This path contains three folders: <br>
 
 #### Hardware layout
 <img width="1463" height="615" alt="image" src="https://github.com/user-attachments/assets/bad5cb35-3d2d-4135-a177-ea0ce6a41a42" />
-The 
+A confession: this is only partial design of the above pipeline. The only custom IP made is convolution filter, the following paragraph, when refer to IP, will be referred to convolution filter IP. <br>
+The function flow here is: <br>
+**\[Input stream\] -> \[Convolution filter (custom IP)\] -> \[Output stream\]** <br>
+With DMA interconnection for faster transferal between PS -> IP and IP -> PS. <br>
+
+#### 
+
+
+#### Simulation
+In the simulation folder it contains a test image (of my handsome face), output result and a testbench verilog file. The level of simulation is IP-level (DUT is the convolution filter IP). The convolution kernel used in simulation is edge detection, as a proof of concept, even though in the project function flow the required kernel type is Gaussian noise filter. However changing the kernel type is fairly fast and easy compare to other parts of the design. <br>
+As can be seen, the IP successfully achieve the edge detection, with correct size specification. 
+
+#### Issue encountered
+The main issue encounter in this hardware iteration is mainly in <br>
+`dma_recvchannel.wait()` <br>
+
+Using ILA, it was found that the transfered bytes and received bytes are not the same. The required transfer bytes are 1280 \* 720, while the receieved bytes are 1280 \* 718, with last two rows missing. The reason is still remain unknown, but I suspected it may due to one of the following reasons: <br>
+
+- TLAST assertion: (however checking from ILA, TLAST is indeed asserted and the timing is correct in simulation, and confirmed there is no potential deadlock from the upstream signals)
+- Boundary condition of convolution filter IP: perhaps the last two rows in line buffer is not output.
+
+#### Lesson learnt
+In terms of the hardware / technical side, I have learnt a lot in the following aspect:
+
+- ILA and hardware manager, waveform viewing and debug
+- AXI-stream protocol and handshake 
+- RTL design (including race condition, signal timing, blocking & non-blocking assignment)
+- Simulation and testbench (tb in verilog instead of C++)
+
+In terms of project / soft-skill wise, due to the mentioned issue above, I have spent 2-3 weeks on solving this issue, resulting a significant delay in the project. While learning RTL from scratch is an essential skill, I should prioritise on the project deadline and quickly shift to alternative solution / work around it. This time the project timeline is significantly delayed due to me (Wells)
