@@ -27,7 +27,7 @@ This path contains three folders: <br>
 <img width="1463" height="615" alt="image" src="https://github.com/user-attachments/assets/bad5cb35-3d2d-4135-a177-ea0ce6a41a42" />
 A confession: this is only partial design of the above pipeline. The only custom IP made is convolution filter, the following paragraph, when refer to IP, will be referred to convolution filter IP. <br>
 The function flow here is: <br>
-**\[Input stream\] -> \[Convolution filter (custom IP)\] -> \[Output stream\]** 
+**\[Input stream\] -> \[Convolution filter (custom IP)\] -> \[Output stream\]**
 <br> With DMA interconnection for faster transferal between PS -> IP and IP -> PS. <br>
 
 #### Verilog files
