@@ -115,12 +115,15 @@ the adopted LED-wand + camera + PYNQ + WandBrain system preserved on
 
 The current project record also indicates that the final pre-demonstration
 phase involved shared rapid development, testing, and debugging with Wells and
-Mingze.
+Mingze. Current project clarification also indicates that Yi, Wells, and
+Mingze shared final report writing and demo-video production.
 
 The report should therefore distinguish between:
 
 - Yi’s primary implementation ownership of major parts of the adopted system
 - the collaborative nature of the final integration and testing push
+- the shared contribution to final report preparation and demo-video
+  production
 
 ### Report-safe interpretation
 
@@ -133,8 +136,8 @@ sender path, the final WandBrain ingest/runtime path, and the final integrated
 backend, database, and live web interface used in the demonstration. Yi also
 contributed substantially to project setup, interface definition, testing, and
 documentation. The final pre-demonstration phase nevertheless remained
-collaborative, with rapid testing, debugging, and integration work shared with
-other committed contributors.`
+collaborative, with rapid testing, debugging, integration work, final report
+writing, and demo-video production shared with other committed contributors.`
 
 ### Additional management interpretation
 
@@ -190,6 +193,22 @@ branch:
 This supports the claim that Wells contributed real FPGA development work and
 did not remain at planning level only.
 
+There is also visible later branch evidence on `wells_report`, where additional
+commits focus on documenting and presenting this FPGA path in more detail. The
+visible commit sequence includes:
+
+- `83019cb`: `Create README.md`
+- `9412af4`: `Add acknowledgement section to README`
+- `0808de3`: `Enhance README with introduction and path layout`
+- `4edeeff`: `Enhance README with detailed processing flow explanation`
+- `8882966`: `Enhance README with convolution filter details`
+- `0dff49a`: `Fix input-output flow formatting in README`
+- `7acea3b`: `Change dir`
+
+This strengthens the evidence that Wells contributed not only the branch HDL
+and hardware artefacts, but also later documentation and presentation work for
+that FPGA design path.
+
 ### Relation to the final presented model
 
 The branch evidence indicates that Wells pursued a more ambitious FPGA
@@ -209,12 +228,15 @@ The conservative distinction is therefore:
 
 According to the current project record, Wells remained committed through the
 final phase and participated actively in the last rapid integration, testing,
-debugging, and development push alongside Yi and Mingze.
+debugging, and development push alongside Yi and Mingze. Current project
+clarification also indicates that Wells took part in the final report writing
+and demo video production.
 
 This means the report should distinguish between:
 
 - primary implementation ownership of the adopted FPGA path
 - collaborative late-stage validation and recovery effort
+- shared final report preparation and demo-video production
 
 ### Report-safe interpretation
 
@@ -223,9 +245,12 @@ The safest interpretation for the final report is:
 `Wells contributed substantial FPGA architectural work and remained committed
 throughout the project. His branch evidence shows a more advanced
 image-processing PL design path with custom HDL and hardware export artefacts.
-However, this work did not become the main basis of the final adopted
-centroid-based FPGA implementation. In the final pre-demonstration phase, Wells
-also contributed actively to rapid testing, debugging, and integration work.`
+Later branch evidence also shows that he documented and presented that FPGA
+design path in more detail. However, this work did not become the main basis
+of the final adopted centroid-based FPGA implementation. In the final
+pre-demonstration phase, Wells also contributed actively to rapid testing,
+debugging, integration work, final report writing, and demo-video
+production.`
 
 ### Additional management interpretation
 
@@ -458,13 +483,17 @@ orchestration, UDP transmission, and possible FPGA-side acceleration work.
 
 ### Confirmed evidence
 
-The visible GitHub evidence now shows a Mingze-associated authored commit on
-the `feat/hardware` branch:
+The visible GitHub evidence now shows multiple Mingze-associated commits on the
+`feat/hardware` branch:
 
 - `6dcf9b2` (`2026-03-20`) by `MSB_233 <msb_233@foxmail.com>`:
   `Added hardware description and test codes`
+- `4e8db4c` (`2026-03-21`): `Added BOW file`
+- `b5a205f` (`2026-03-21`): `Add hardware documentation and design notes for
+  camera subsystem and BOM`
 
-This commit adds concrete artefacts in three useful categories:
+Taken together, these commits add concrete artefacts in four useful
+categories:
 
 - physical camera-system documentation and hardware assets
   - `hardware/camera/README.md`
@@ -479,6 +508,11 @@ This commit adds concrete artefacts in three useful categories:
 - auxiliary node-side test scripts
   - `FPGA/runtime/test/Full_ps.py`
   - `FPGA/runtime/test/HDMI_test.py`
+- higher-level hardware documentation and presentation artefacts
+  - `hardware/BOM.md`
+  - `hardware/HARDWARE_SUMMARY.md`
+  - `hardware/Single_Node_Layout.png`
+  - `hardware/camera/CamMount/Design_Notes.md`
 
 This is sufficient to treat Mingze’s contribution as clearly evidenced rather
 than pending or speculative.
@@ -529,7 +563,9 @@ The conservative distinction is therefore:
 
 The current project record also indicates that Mingze was highly committed in
 the final pre-demonstration phase and contributed alongside Yi and Wells during
-the late rapid development, testing, debugging, and integration push.
+the late rapid development, testing, debugging, and integration push. Current
+project clarification also indicates that Mingze took part in the final report
+writing and demo video production alongside Yi and Wells.
 
 This should be preserved in report wording so that Mingze’s contribution is not
 reduced only to static hardware artefacts.
@@ -540,12 +576,13 @@ The safest interpretation for the final report is:
 
 `Mingze contributed final-system-relevant hardware and validation support,
 including camera setup documentation, camera-mount CAD assets, LED-wand CAD and
-schematic artefacts, and auxiliary PYNQ-side test scripts. These contributions
-align with the physical sensing setup used by the final presented model. In the
-final pre-demonstration phase, Mingze also contributed actively to rapid
-testing, debugging, and integration work. Based on current GitHub evidence
-alone, however, this should be distinguished from primary ownership of the
-final adopted PS/runtime and centroid-based FPGA implementation.`
+schematic artefacts, BOM and hardware-summary documentation, and auxiliary
+PYNQ-side test scripts. These contributions align with the physical sensing
+setup used by the final presented model. In the final pre-demonstration phase,
+Mingze also contributed actively to rapid testing, debugging, integration
+work, final report writing, and demo-video production. Based on current GitHub
+evidence alone, however, this should be distinguished from primary ownership of
+the final adopted PS/runtime and centroid-based FPGA implementation.`
 
 ### Additional management interpretation
 
